@@ -132,6 +132,7 @@ export default function SchedulePage() {
   };
 
   const toggleAttendance = async (bandId: string, currentlyAttending: boolean) => {
+    // Actualización optimista del UI
     setTimeSlots((prev) =>
       prev.map((slot) => ({
         ...slot,
@@ -152,9 +153,13 @@ export default function SchedulePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bandId, attending: !currentlyAttending }),
       });
-      if (res.ok) await fetchData();
+      if (!res.ok) {
+        // Solo revertir si falla
+        await fetchData();
+      }
     } catch (error) {
       console.error("Error toggling attendance:", error);
+      // Revertir cambios si hay error
       await fetchData();
     }
   };
