@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { motion } from "framer-motion";
-import { useSession } from "next-auth/react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { stageColors, stageName } from "@/lib/stage-colors";
 
@@ -45,6 +45,8 @@ export default function SchedulePage() {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [highlightedBand, setHighlightedBand] = useState<string | null>(null);
   const bandRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [pendingNotifications, setPendingNotifications] = useState(0);
 
   const stages =
     selectedDay === 1
@@ -66,8 +68,19 @@ export default function SchedulePage() {
       router.push("/login");
     } else if (status === "authenticated") {
       fetchData();
+      fetchNotifications();
     }
   }, [status, selectedDay]);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch("/api/friends");
+      const data = await res.json();
+      setPendingNotifications(data.pendingReceived?.length || 0);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
 
   // Scroll to current time line after loading
   useEffect(() => {
@@ -236,9 +249,62 @@ export default function SchedulePage() {
               <h1 className="text-lg font-bold text-white tracking-tight">Cosquin Rock 2026</h1>
               <p className="text-xs text-zinc-500">{selectedDay === 1 ? "14 de febrero" : "15 de febrero"}</p>
             </div>
-            <span className="text-xs text-zinc-500 bg-zinc-800/50 px-2 py-1 rounded-full">
-              @{session?.user?.name}
-            </span>
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="text-xs text-zinc-300 bg-zinc-800/50 hover:bg-zinc-700/50 px-3 py-1.5 rounded-full transition-colors relative"
+              >
+                @{session?.user?.name}
+                {pendingNotifications > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] text-white flex items-center justify-center font-bold">
+                    {pendingNotifications}
+                  </span>
+                )}
+              </button>
+
+              {/* User Dropdown Menu */}
+              <AnimatePresence>
+                {showUserMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute top-full right-0 mt-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl z-50 min-w-[200px]"
+                  >
+                    <div className="p-3 border-b border-zinc-800">
+                      <p className="text-sm font-semibold text-white">@{session?.user?.name}</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">Usuario</p>
+                    </div>
+                    {pendingNotifications > 0 && (
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          router.push("/groups");
+                        }}
+                        className="w-full px-3 py-2.5 text-left hover:bg-zinc-800 transition-colors border-b border-zinc-800 flex items-center justify-between"
+                      >
+                        <span className="text-sm text-white">Solicitudes de amistad</span>
+                        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+                          {pendingNotifications}
+                        </span>
+                      </button>
+                    )}
+                    <button
+                      onClick={async () => {
+                        await signOut({ redirect: false });
+                        router.push("/login");
+                      }}
+                      className="w-full px-3 py-2.5 text-left hover:bg-zinc-800 transition-colors text-sm text-red-400 hover:text-red-300 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      Cerrar sesión
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           {/* Search Bar */}
