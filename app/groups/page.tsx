@@ -632,7 +632,7 @@ export default function GroupsPage() {
                           <span className="text-sm text-white font-medium">@{friend.username}</span>
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => router.push(`/compare/${friend.userId}`)}
+                              onClick={() => router.push(`/compare/${friend.id}`)}
                               className="text-xs px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg transition-colors font-medium"
                             >
                               Comparar
