@@ -165,7 +165,7 @@ export default function SharedAgendaPage({ params }: { params: Promise<{ token: 
       </header>
 
       {/* Content */}
-      <div className="max-w-2xl mx-auto p-4">
+      <div className="max-w-2xl mx-auto p-4 pb-8">
         {agenda.bands.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">🎵</div>
@@ -179,7 +179,7 @@ export default function SharedAgendaPage({ params }: { params: Promise<{ token: 
         )}
 
         {/* CTA */}
-        <div className="mt-8 text-center bg-zinc-900 rounded-xl p-6 border border-zinc-800">
+        <div className="mt-8 mb-8 text-center bg-zinc-900 rounded-xl p-6 border border-zinc-800">
           <p className="text-zinc-400 mb-4">¿Querés organizar tu propia agenda?</p>
           <a
             href="/login"
