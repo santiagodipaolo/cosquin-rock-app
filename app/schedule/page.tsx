@@ -41,6 +41,10 @@ export default function SchedulePage() {
   const [now, setNow] = useState(Date.now());
   const scrollRef = useRef<HTMLDivElement>(null);
   const timeLineRef = useRef<HTMLDivElement>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [highlightedBand, setHighlightedBand] = useState<string | null>(null);
+  const bandRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const stages =
     selectedDay === 1
@@ -180,6 +184,37 @@ export default function SchedulePage() {
 
   const timeLinePosition = findTimeLinePosition();
 
+  const searchResults = bands.filter(
+    (band) =>
+      band.day === selectedDay &&
+      band.name.toLowerCase().includes(searchQuery.toLowerCase())
+  ).slice(0, 5);
+
+  const handleBandClick = (band: Band) => {
+    const bandKey = `${band.stage}-${band.id}`;
+    const element = bandRefs.current[bandKey];
+
+    if (element && scrollRef.current) {
+      // Scrollear hasta la banda
+      const container = scrollRef.current;
+      const elementRect = element.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+
+      container.scrollTo({
+        left: element.offsetLeft - containerRect.width / 2 + elementRect.width / 2,
+        top: element.offsetTop - containerRect.height / 2 + elementRect.height / 2,
+        behavior: "smooth",
+      });
+
+      // Highlight temporal
+      setHighlightedBand(band.id);
+      setTimeout(() => setHighlightedBand(null), 3000);
+    }
+
+    setSearchQuery("");
+    setShowSearchResults(false);
+  };
+
   if (status === "loading" || status === "unauthenticated") {
     return (
       <div className="h-screen bg-zinc-950 flex items-center justify-center">
@@ -206,8 +241,90 @@ export default function SchedulePage() {
             </span>
           </div>
 
+          {/* Search Bar */}
+          <div className="mb-3 relative">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowSearchResults(e.target.value.length > 0);
+                }}
+                onFocus={() => setShowSearchResults(searchQuery.length > 0)}
+                placeholder="Buscar banda... (ej: La Vela Puerca)"
+                className="w-full px-4 py-2.5 pl-10 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              />
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setShowSearchResults(false);
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Search Results Dropdown */}
+            {showSearchResults && searchResults.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute top-full mt-2 left-0 right-0 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden z-30 shadow-2xl"
+              >
+                {searchResults.map((band) => {
+                  const colors = stageColors[band.stage];
+                  const time = new Date(band.startTime).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+                  return (
+                    <button
+                      key={band.id}
+                      onClick={() => handleBandClick(band)}
+                      className="w-full flex items-center gap-3 p-3 hover:bg-zinc-800 transition-colors border-b border-zinc-800 last:border-0"
+                    >
+                      <div className="w-1 h-10 rounded-full flex-shrink-0" style={{ backgroundColor: colors.accent }} />
+                      <div className="flex-1 text-left">
+                        <h4 className="font-semibold text-white text-sm">{band.name}</h4>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span
+                            className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                            style={{ backgroundColor: `${colors.accent}25`, color: colors.accent }}
+                          >
+                            {stageName[band.stage]}
+                          </span>
+                          <span className="text-[10px] text-zinc-500">{time}</span>
+                        </div>
+                      </div>
+                      <svg className="w-5 h-5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  );
+                })}
+                {searchQuery && searchResults.length === 0 && (
+                  <div className="p-4 text-center text-zinc-500 text-sm">
+                    No se encontró "{searchQuery}"
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </div>
+
           {/* Day toggle */}
-          <div className="flex gap-1 p-1 bg-zinc-900 rounded-xl">
+          <div className="flex gap-1 p-1 bg-zinc-900 rounded-xl mb-3">
             <button
               onClick={() => { setSelectedDay(1); setActiveStageFilter(null); }}
               className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
@@ -334,6 +451,9 @@ export default function SchedulePage() {
                         >
                           {band ? (
                             <motion.div
+                              ref={(el) => {
+                                if (el) bandRefs.current[`${band.stage}-${band.id}`] = el;
+                              }}
                               whileTap={{ scale: 0.96 }}
                               onClick={() => toggleAttendance(band.id, band.isAttending || false)}
                               className={`h-full rounded-xl cursor-pointer flex flex-col justify-center relative overflow-hidden transition-all duration-200 ${
@@ -341,6 +461,8 @@ export default function SchedulePage() {
                                   ? "opacity-50"
                                   : band.isAttending
                                   ? `shadow-lg ${colors.glow} border-2 border-white/30 ring-2`
+                                  : highlightedBand === band.id
+                                  ? `shadow-xl ring-4 ring-yellow-400 animate-pulse`
                                   : "opacity-60"
                               }`}
                               style={{
@@ -349,6 +471,8 @@ export default function SchedulePage() {
                                   ? { backgroundColor: `${colors.accent}10`, border: `1px solid ${colors.accent}15` }
                                   : band.isAttending
                                   ? { backgroundColor: `${colors.accent}90`, ringColor: `${colors.accent}60` }
+                                  : highlightedBand === band.id
+                                  ? { backgroundColor: `${colors.accent}95`, border: `3px solid #facc15` }
                                   : { backgroundColor: `${colors.accent}15`, border: `1px solid ${colors.accent}20` }
                                 ),
                               }}
