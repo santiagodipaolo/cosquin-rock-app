@@ -250,7 +250,7 @@ export default function SchedulePage() {
                   }`}
                   style={
                     activeStageFilter === stage
-                      ? { backgroundColor: `${colors.accent}90`, ringColor: `${colors.accent}60` }
+                      ? { backgroundColor: `${colors.accent}90`, ['--tw-ring-color' as any]: `${colors.accent}60` }
                       : { backgroundColor: `${colors.accent}15`, border: `1px solid ${colors.accent}20` }
                   }
                 >
