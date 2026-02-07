@@ -149,7 +149,10 @@ export default function ComparePage({ params }: { params: Promise<{ friendId: st
     return firstBand ? firstBand.day === activeDay : false;
   });
 
-  const stages = ["pepper", "yamaha", "personal", "flow"];
+  const stages =
+    activeDay === 1
+      ? ["NORTE", "SUR", "MONTANA", "BOOM_ERANG", "CASITA_BLUES", "PLAZA_ELECTRONICA", "SORPRESA"]
+      : ["NORTE", "SUR", "MONTANA", "PARAGUAY", "CASITA_BLUES", "PLAZA_ELECTRONICA", "SORPRESA"];
 
   if (loading || !data) {
     return (
