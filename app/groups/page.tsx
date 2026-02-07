@@ -630,14 +630,22 @@ export default function GroupsPage() {
                           className="flex items-center justify-between py-3 px-4 bg-zinc-900 rounded-xl border border-zinc-800"
                         >
                           <span className="text-sm text-white font-medium">@{friend.username}</span>
-                          <button
-                            onClick={() => handleRemoveFriend(friend.friendshipId, friend.username)}
-                            className="text-zinc-600 hover:text-red-400 transition-colors p-1"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => router.push(`/compare/${friend.userId}`)}
+                              className="text-xs px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg transition-colors font-medium"
+                            >
+                              Comparar
+                            </button>
+                            <button
+                              onClick={() => handleRemoveFriend(friend.friendshipId, friend.username)}
+                              className="text-zinc-600 hover:text-red-400 transition-colors p-1"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
                         </motion.div>
                       ))}
                     </div>

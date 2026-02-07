@@ -46,6 +46,39 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Auto-agregar como amigos a todos los miembros del grupo
+    const existingMembers = await prisma.groupMember.findMany({
+      where: {
+        groupId: group.id,
+        userId: { not: session.user.id },
+      },
+      select: { userId: true },
+    });
+
+    // Crear amistades mutuas con cada miembro (si no existen ya)
+    for (const member of existingMembers) {
+      // Verificar si ya son amigos
+      const existingFriendship = await prisma.friendship.findFirst({
+        where: {
+          OR: [
+            { requesterId: session.user.id, addresseeId: member.userId },
+            { requesterId: member.userId, addresseeId: session.user.id },
+          ],
+        },
+      });
+
+      if (!existingFriendship) {
+        // Crear amistad automáticamente aceptada
+        await prisma.friendship.create({
+          data: {
+            requesterId: session.user.id,
+            addresseeId: member.userId,
+            status: "accepted",
+          },
+        });
+      }
+    }
+
     // Devolver grupo completo
     const updatedGroup = await prisma.group.findUnique({
       where: { id: group.id },
