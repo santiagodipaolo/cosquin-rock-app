@@ -135,7 +135,7 @@ export default function SharedAgendaPage({ params }: { params: Promise<{ token: 
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 overflow-y-auto">
+    <div className="w-full bg-zinc-950" style={{ minHeight: '100vh', height: 'auto', overflowY: 'scroll', WebkitOverflowScrolling: 'touch' }}>
       {/* Header */}
       <header className="bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 text-white py-8 px-4 border-b border-zinc-800">
         <div className="max-w-2xl mx-auto text-center">

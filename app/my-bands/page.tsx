@@ -33,9 +33,7 @@ export default function MyBandsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<1 | 2>(1);
   const [sharing, setSharing] = useState(false);
-  const [generatingImage, setGeneratingImage] = useState(false);
   const [now, setNow] = useState(Date.now());
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const nowLineRef = useRef<HTMLDivElement>(null);
 
   // Update current time every minute
@@ -136,144 +134,6 @@ export default function MyBandsPage() {
     }
   };
 
-  const generateWrappedImage = async () => {
-    setGeneratingImage(true);
-    try {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      const width = 1080;
-      const height = 1920;
-      canvas.width = width;
-      canvas.height = height;
-
-      // Background gradient
-      const grad = ctx.createLinearGradient(0, 0, width, height);
-      grad.addColorStop(0, "#09090b");
-      grad.addColorStop(0.5, "#18181b");
-      grad.addColorStop(1, "#09090b");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, width, height);
-
-      // Header
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 56px system-ui, -apple-system, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("COSQUIN ROCK 2026", width / 2, 120);
-
-      ctx.font = "28px system-ui, sans-serif";
-      ctx.fillStyle = "#a1a1aa";
-      ctx.fillText(`Agenda de @${session?.user?.name}`, width / 2, 170);
-
-      // Accent line
-      const accentGrad = ctx.createLinearGradient(width / 2 - 200, 0, width / 2 + 200, 0);
-      accentGrad.addColorStop(0, "#ff6b35");
-      accentGrad.addColorStop(1, "#e85a24");
-      ctx.fillStyle = accentGrad;
-      ctx.fillRect(width / 2 - 200, 200, 400, 4);
-
-      const accentColors: Record<string, string> = {
-        NORTE: "#f43f5e", SUR: "#8b5cf6", MONTANA: "#10b981",
-        BOOM_ERANG: "#f59e0b", CASITA_BLUES: "#0ea5e9", PARAGUAY: "#14b8a6",
-        PLAZA_ELECTRONICA: "#d946ef", SORPRESA: "#eab308",
-      };
-
-      let yPos = 260;
-
-      [1, 2].forEach((day) => {
-        const dayBands = bands
-          .filter((b) => b.band.day === day)
-          .sort((a, b) => new Date(a.band.startTime).getTime() - new Date(b.band.startTime).getTime());
-
-        if (dayBands.length === 0) return;
-
-        // Day header
-        ctx.font = "bold 36px system-ui, sans-serif";
-        ctx.fillStyle = "#ff6b35";
-        ctx.textAlign = "left";
-        ctx.fillText(day === 1 ? "VIERNES 14" : "SABADO 15", 60, yPos);
-        ctx.font = "24px system-ui, sans-serif";
-        ctx.fillStyle = "#71717a";
-        ctx.fillText(`${dayBands.length} bandas`, 60, yPos + 35);
-        yPos += 70;
-
-        dayBands.forEach((item) => {
-          const time = new Date(item.band.startTime).toLocaleTimeString("es-AR", {
-            hour: "2-digit", minute: "2-digit",
-          });
-          const color = accentColors[item.band.stage] || "#ff6b35";
-
-          // Color bar
-          ctx.fillStyle = color;
-          ctx.fillRect(60, yPos, 5, 50);
-
-          // Time
-          ctx.font = "bold 24px system-ui, monospace, sans-serif";
-          ctx.fillStyle = color;
-          ctx.textAlign = "left";
-          ctx.fillText(time, 80, yPos + 20);
-
-          // Band name
-          ctx.font = "bold 26px system-ui, sans-serif";
-          ctx.fillStyle = "#ffffff";
-          ctx.fillText(item.band.name, 200, yPos + 20);
-
-          // Stage name
-          ctx.font = "20px system-ui, sans-serif";
-          ctx.fillStyle = "#71717a";
-          ctx.fillText(stageName[item.band.stage] || item.band.stage, 200, yPos + 46);
-
-          yPos += 65;
-        });
-
-        yPos += 20;
-      });
-
-      // Footer
-      ctx.font = "22px system-ui, sans-serif";
-      ctx.fillStyle = "#52525b";
-      ctx.textAlign = "center";
-      ctx.fillText(`${bands.length} bandas en total`, width / 2, height - 100);
-
-      ctx.font = "18px system-ui, sans-serif";
-      ctx.fillStyle = "#3f3f46";
-      ctx.fillText("cosquinrock.app", width / 2, height - 60);
-
-      // Download
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-
-        if (navigator.share) {
-          const file = new File([blob], "mi-agenda-cosquin-rock.png", { type: "image/png" });
-          navigator.share({
-            title: "Mi Agenda - Cosquin Rock 2026",
-            files: [file],
-          }).catch(() => {
-            // Fallback: download
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "mi-agenda-cosquin-rock.png";
-            a.click();
-          });
-        } else {
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "mi-agenda-cosquin-rock.png";
-          a.click();
-        }
-
-        URL.revokeObjectURL(url);
-        setGeneratingImage(false);
-      }, "image/png");
-    } catch (error) {
-      console.error("Error generating image:", error);
-      setGeneratingImage(false);
-    }
-  };
 
   if (status === "loading" || status === "unauthenticated") {
     return (
@@ -308,16 +168,6 @@ export default function MyBandsPage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <button
-                onClick={generateWrappedImage}
-                disabled={generatingImage || bands.length === 0}
-                className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-primary to-primary-dark rounded-full text-xs text-white font-medium transition-colors disabled:opacity-50"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                {generatingImage ? "..." : "Wrapped"}
-              </button>
               <button
                 onClick={handleShare}
                 disabled={sharing || bands.length === 0}
