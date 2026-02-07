@@ -55,6 +55,9 @@ export async function POST(request: NextRequest) {
       select: { userId: true },
     });
 
+    console.log(`[AUTO-FRIEND] Usuario ${session.user.id} se unio al grupo ${group.id}`);
+    console.log(`[AUTO-FRIEND] Miembros existentes encontrados: ${existingMembers.length}`, existingMembers);
+
     // Crear amistades mutuas con cada miembro (si no existen ya)
     for (const member of existingMembers) {
       // Verificar si ya son amigos
@@ -67,15 +70,18 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      console.log(`[AUTO-FRIEND] Verificando amistad con ${member.userId}: ${existingFriendship ? 'Ya existe' : 'Creando nueva'}`);
+
       if (!existingFriendship) {
         // Crear amistad automáticamente aceptada
-        await prisma.friendship.create({
+        const newFriendship = await prisma.friendship.create({
           data: {
             requesterId: session.user.id,
             addresseeId: member.userId,
             status: "accepted",
           },
         });
+        console.log(`[AUTO-FRIEND] Amistad creada:`, newFriendship);
       }
     }
 
