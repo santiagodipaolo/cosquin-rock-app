@@ -47,6 +47,10 @@ export default function GroupsPage() {
   const [inviteCode, setInviteCode] = useState("");
   const [creating, setCreating] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [editingGroupName, setEditingGroupName] = useState("");
+  const [showJoinSuccess, setShowJoinSuccess] = useState(false);
+  const [joinSuccessMessage, setJoinSuccessMessage] = useState("");
 
   // Friends state
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -81,7 +85,9 @@ export default function GroupsPage() {
         if (res.ok) {
           const group = await res.json();
           setGroups((prev) => [...prev, group]);
-          alert(`Te uniste al grupo "${group.name}"`);
+          setJoinSuccessMessage(`Te uniste al grupo "${group.name}"! 🎸`);
+          setShowJoinSuccess(true);
+          setTimeout(() => setShowJoinSuccess(false), 5000);
         }
       } catch (error) {
         console.error("Error joining group:", error);
@@ -151,6 +157,9 @@ export default function GroupsPage() {
         setGroups([...groups, group]);
         setShowJoinModal(false);
         setInviteCode("");
+        setJoinSuccessMessage(`Te uniste al grupo "${group.name}"! 🎸`);
+        setShowJoinSuccess(true);
+        setTimeout(() => setShowJoinSuccess(false), 5000);
       } else {
         const error = await res.json();
         alert(error.error || "Error al unirse al grupo");
@@ -232,6 +241,38 @@ export default function GroupsPage() {
   };
 
   const isAdmin = (group: Group) => group.createdBy === session?.user?.id;
+
+  const handleEditGroupName = (group: Group) => {
+    setEditingGroupId(group.id);
+    setEditingGroupName(group.name);
+  };
+
+  const handleSaveGroupName = async (groupId: string) => {
+    if (!editingGroupName.trim()) return;
+    try {
+      const res = await fetch(`/api/groups/${groupId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editingGroupName.trim() }),
+      });
+      if (res.ok) {
+        const updatedGroup = await res.json();
+        setGroups(groups.map((g) => (g.id === groupId ? updatedGroup : g)));
+        setEditingGroupId(null);
+        setEditingGroupName("");
+      } else {
+        const error = await res.json();
+        alert(error.error || "Error al actualizar nombre");
+      }
+    } catch (error) {
+      console.error("Error updating group name:", error);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingGroupId(null);
+    setEditingGroupName("");
+  };
 
   // Friends handlers
   const handleAddFriend = async () => {
@@ -348,6 +389,23 @@ export default function GroupsPage() {
         </div>
       </header>
 
+      {/* Success Banner */}
+      <AnimatePresence>
+        {showJoinSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mx-4 mt-4 p-3 bg-gradient-to-r from-green-500/20 to-primary/20 border border-green-500/30 rounded-xl"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-xl">✅</span>
+              <p className="text-sm text-white font-medium">{joinSuccessMessage}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex-1 overflow-auto min-h-0 pb-16">
         {activeTab === "groups" ? (
           /* ===== GROUPS TAB ===== */
@@ -398,18 +456,64 @@ export default function GroupsPage() {
                     {/* Group header */}
                     <div className="p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-white">{group.name}</h3>
-                          {isAdmin(group) && (
-                            <span className="text-[10px] px-1.5 py-0.5 bg-primary/20 text-primary rounded-full font-medium">Admin</span>
+                        <div className="flex items-center gap-2 flex-1">
+                          {editingGroupId === group.id ? (
+                            <div className="flex items-center gap-2 flex-1">
+                              <input
+                                type="text"
+                                value={editingGroupName}
+                                onChange={(e) => setEditingGroupName(e.target.value)}
+                                className="flex-1 px-2 py-1 bg-zinc-800 border border-primary rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") handleSaveGroupName(group.id);
+                                  if (e.key === "Escape") handleCancelEdit();
+                                }}
+                              />
+                              <button
+                                onClick={() => handleSaveGroupName(group.id)}
+                                className="p-1.5 bg-primary hover:bg-primary-dark rounded-lg transition-colors"
+                              >
+                                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="p-1.5 bg-zinc-700 hover:bg-zinc-600 rounded-lg transition-colors"
+                              >
+                                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <h3 className="font-semibold text-white">{group.name}</h3>
+                              {isAdmin(group) && (
+                                <>
+                                  <button
+                                    onClick={() => handleEditGroupName(group)}
+                                    className="p-1 text-zinc-500 hover:text-primary transition-colors"
+                                  >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                  </button>
+                                  <span className="text-[10px] px-1.5 py-0.5 bg-primary/20 text-primary rounded-full font-medium">Admin</span>
+                                </>
+                              )}
+                            </>
                           )}
                         </div>
-                        <button
-                          onClick={() => copyInviteCode(group.inviteCode)}
-                          className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-300 font-mono transition-colors text-xs"
-                        >
-                          {group.inviteCode}
-                        </button>
+                        {editingGroupId !== group.id && (
+                          <button
+                            onClick={() => copyInviteCode(group.inviteCode)}
+                            className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-300 font-mono transition-colors text-xs flex-shrink-0"
+                          >
+                            {group.inviteCode}
+                          </button>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2 text-sm text-zinc-400 mb-3">
