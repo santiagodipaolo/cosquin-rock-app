@@ -154,9 +154,6 @@ export default function MyBandsPage() {
 
   return (
     <div className="h-screen bg-zinc-950 flex flex-col overflow-hidden">
-      {/* Hidden canvas for image generation */}
-      <canvas ref={canvasRef} className="hidden" />
-
       {/* Header */}
       <header className="bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800/50 flex-shrink-0 z-10">
         <div className="px-4 pt-3 pb-2">
