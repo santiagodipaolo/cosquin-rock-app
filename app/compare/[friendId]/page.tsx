@@ -23,12 +23,21 @@ type ComparisonData = {
   onlyFriend: Band[];
 };
 
+type TimeSlot = {
+  time: string;
+  bands: {
+    [stage: string]: Band & { comparison: "both" | "me" | "friend" | "none" };
+  };
+};
+
 export default function ComparePage({ params }: { params: Promise<{ friendId: string }> }) {
   const { friendId } = use(params);
   const { data: session, status } = useSession();
   const router = useRouter();
   const [data, setData] = useState<ComparisonData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeDay, setActiveDay] = useState<number>(1);
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -43,6 +52,7 @@ export default function ComparePage({ params }: { params: Promise<{ friendId: st
       const res = await fetch(`/api/compare/${friendId}`);
       const compData = await res.json();
       setData(compData);
+      buildTimeSlots(compData);
     } catch (error) {
       console.error("Error fetching comparison:", error);
     } finally {
@@ -50,84 +60,96 @@ export default function ComparePage({ params }: { params: Promise<{ friendId: st
     }
   };
 
-  const renderBandList = (bands: Band[], title: string, color: string, icon: string) => {
-    if (bands.length === 0) return null;
+  const buildTimeSlots = (compData: ComparisonData) => {
+    // Fetch all bands to build the grid
+    fetch("/api/bands")
+      .then((res) => res.json())
+      .then((allBands: Band[]) => {
+        const slots: { [key: string]: TimeSlot } = {};
 
-    const day1 = bands.filter((b) => b.day === 1).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-    const day2 = bands.filter((b) => b.day === 2).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+        allBands.forEach((band) => {
+          const timeKey = new Date(band.startTime).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
 
-    return (
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-2xl">{icon}</span>
-          <h2 className={`text-lg font-bold ${color}`}>{title}</h2>
-          <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full">{bands.length}</span>
-        </div>
+          if (!slots[timeKey]) {
+            slots[timeKey] = { time: timeKey, bands: {} };
+          }
 
-        {day1.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold text-zinc-400 mb-2">Viernes 14</h3>
-            <div className="space-y-2">
-              {day1.map((band) => {
-                const colors = stageColors[band.stage];
-                const time = new Date(band.startTime).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
-                return (
-                  <motion.div
-                    key={band.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-3 p-2.5 bg-zinc-900/50 rounded-lg border border-zinc-800/50"
-                  >
-                    <div className="w-1 h-12 rounded-full" style={{ backgroundColor: colors.accent }} />
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-white text-sm">{band.name}</h4>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: `${colors.accent}25`, color: colors.accent }}>
-                          {stageName[band.stage]}
-                        </span>
-                        <span className="text-[10px] text-zinc-500">{time}</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+          // Determine comparison status
+          let comparison: "both" | "me" | "friend" | "none" = "none";
+          if (compData.both.some((b) => b.id === band.id)) {
+            comparison = "both";
+          } else if (compData.onlyMe.some((b) => b.id === band.id)) {
+            comparison = "me";
+          } else if (compData.onlyFriend.some((b) => b.id === band.id)) {
+            comparison = "friend";
+          }
 
-        {day2.length > 0 && (
-          <div>
-            <h3 className="text-sm font-semibold text-zinc-400 mb-2">Sábado 15</h3>
-            <div className="space-y-2">
-              {day2.map((band) => {
-                const colors = stageColors[band.stage];
-                const time = new Date(band.startTime).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
-                return (
-                  <motion.div
-                    key={band.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-3 p-2.5 bg-zinc-900/50 rounded-lg border border-zinc-800/50"
-                  >
-                    <div className="w-1 h-12 rounded-full" style={{ backgroundColor: colors.accent }} />
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-white text-sm">{band.name}</h4>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: `${colors.accent}25`, color: colors.accent }}>
-                          {stageName[band.stage]}
-                        </span>
-                        <span className="text-[10px] text-zinc-500">{time}</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-    );
+          slots[timeKey].bands[band.stage] = { ...band, comparison };
+        });
+
+        const sortedSlots = Object.values(slots).sort((a, b) => {
+          const [aHour, aMin] = a.time.split(":").map(Number);
+          const [bHour, bMin] = b.time.split(":").map(Number);
+          return aHour * 60 + aMin - (bHour * 60 + bMin);
+        });
+
+        setTimeSlots(sortedSlots);
+      });
   };
+
+  const getComparisonStyle = (comparison: "both" | "me" | "friend" | "none", colors: any) => {
+    switch (comparison) {
+      case "both":
+        return {
+          backgroundColor: `${colors.accent}90`,
+          border: "2px solid rgba(34, 197, 94, 0.5)", // green
+          glow: "shadow-lg shadow-green-500/30",
+          textColor: "text-white drop-shadow-md",
+          icon: "🎸",
+          label: "Ambos",
+          labelColor: "bg-green-500/20 text-green-400 border-green-500/30",
+        };
+      case "me":
+        return {
+          backgroundColor: `${colors.accent}70`,
+          border: "2px solid rgba(59, 130, 246, 0.4)", // blue
+          glow: "shadow-md shadow-blue-500/20",
+          textColor: "text-white",
+          icon: "👤",
+          label: "Solo vos",
+          labelColor: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+        };
+      case "friend":
+        return {
+          backgroundColor: `${colors.accent}70`,
+          border: "2px solid rgba(245, 158, 11, 0.4)", // amber
+          glow: "shadow-md shadow-amber-500/20",
+          textColor: "text-white",
+          icon: "👥",
+          label: `Solo @${data?.friend.username}`,
+          labelColor: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+        };
+      case "none":
+      default:
+        return {
+          backgroundColor: `${colors.accent}10`,
+          border: `1px solid ${colors.accent}15`,
+          glow: "",
+          textColor: "text-zinc-500",
+          icon: "",
+          label: "",
+          labelColor: "",
+        };
+    }
+  };
+
+  const filteredTimeSlots = timeSlots.filter((slot) => {
+    // Filter by day
+    const firstBand = Object.values(slot.bands)[0];
+    return firstBand ? firstBand.day === activeDay : false;
+  });
+
+  const stages = ["pepper", "yamaha", "personal", "flow"];
 
   if (loading || !data) {
     return (
@@ -141,50 +163,144 @@ export default function ComparePage({ params }: { params: Promise<{ friendId: st
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 pb-24">
+    <div className="h-screen bg-zinc-950 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-zinc-900 border-b border-zinc-800 p-4 sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-zinc-400 hover:text-white transition-colors">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <div>
-            <h1 className="text-lg font-bold text-white">Comparación de Agendas</h1>
-            <p className="text-xs text-zinc-400">Tú vs @{data.friend.username}</p>
+      <header className="bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800/50 flex-shrink-0 z-20">
+        <div className="p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <button onClick={() => router.back()} className="text-zinc-400 hover:text-white transition-colors">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="flex-1">
+              <h1 className="text-lg font-bold text-white">Comparación</h1>
+              <p className="text-xs text-zinc-400">Vos vs @{data.friend.username}</p>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2 text-center">
+              <div className="text-xl font-bold text-green-400">{data.both.length}</div>
+              <div className="text-[9px] text-green-300">Ambos</div>
+            </div>
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2 text-center">
+              <div className="text-xl font-bold text-blue-400">{data.onlyMe.length}</div>
+              <div className="text-[9px] text-blue-300">Solo vos</div>
+            </div>
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-2 text-center">
+              <div className="text-xl font-bold text-amber-400">{data.onlyFriend.length}</div>
+              <div className="text-[9px] text-amber-300">Solo @{data.friend.username}</div>
+            </div>
+          </div>
+
+          {/* Day selector */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveDay(1)}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeDay === 1
+                  ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg"
+                  : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              Viernes 14
+            </button>
+            <button
+              onClick={() => setActiveDay(2)}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeDay === 2
+                  ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg"
+                  : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              Sábado 15
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Stats */}
-      <div className="p-4 grid grid-cols-3 gap-3">
-        <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-green-400">{data.both.length}</div>
-          <div className="text-[10px] text-green-300 mt-1">En común</div>
-        </div>
-        <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-blue-400">{data.onlyMe.length}</div>
-          <div className="text-[10px] text-blue-300 mt-1">Solo tú</div>
-        </div>
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-amber-400">{data.onlyFriend.length}</div>
-          <div className="text-[10px] text-amber-300 mt-1">Solo @{data.friend.username}</div>
-        </div>
-      </div>
-
-      {/* Lists */}
-      <div className="p-4">
-        {renderBandList(data.both, "Bandas en común", "text-green-400", "🎸")}
-        {renderBandList(data.onlyMe, "Solo vos", "text-blue-400", "👤")}
-        {renderBandList(data.onlyFriend, `Solo @${data.friend.username}`, "text-amber-400", "👥")}
-
-        {data.both.length === 0 && data.onlyMe.length === 0 && data.onlyFriend.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">🎵</div>
-            <p className="text-zinc-400">Ninguno de los dos tiene bandas seleccionadas aún</p>
+      {/* Grid */}
+      <div className="flex-1 overflow-auto min-h-0">
+        <div className="flex min-w-full">
+          {/* Time column */}
+          <div className="sticky left-0 z-10 flex-shrink-0 bg-zinc-950 w-14">
+            <div className="h-10 border-b border-zinc-800/50 flex items-center justify-center">
+              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Hora</span>
+            </div>
+            {filteredTimeSlots.map((slot) => (
+              <div key={slot.time} className="h-[100px] border-b border-zinc-700/50 flex items-center justify-center bg-zinc-950">
+                <span className="text-xs font-bold tabular-nums text-zinc-300">{slot.time}</span>
+              </div>
+            ))}
           </div>
-        )}
+
+          {/* Stage columns */}
+          {stages.map((stage) => {
+            const colors = stageColors[stage];
+            return (
+              <div key={stage} className="flex-1 min-w-[120px] border-r border-zinc-700/40">
+                {/* Stage header */}
+                <div className={`h-10 border-b border-zinc-800/50 flex items-center justify-center px-1 bg-gradient-to-r ${colors.gradient}`}>
+                  <span className="text-[10px] font-bold text-white text-center drop-shadow-sm leading-tight">
+                    {stageName[stage]}
+                  </span>
+                </div>
+
+                {/* Bands */}
+                {filteredTimeSlots.map((slot) => {
+                  const band = slot.bands[stage];
+                  if (!band) {
+                    return (
+                      <div
+                        key={`${stage}-${slot.time}`}
+                        className="h-[100px] border-b border-zinc-700/50"
+                        style={{ backgroundColor: `${colors.accent}08` }}
+                      />
+                    );
+                  }
+
+                  const style = getComparisonStyle(band.comparison, colors);
+
+                  return (
+                    <div
+                      key={`${stage}-${slot.time}`}
+                      className="h-[100px] border-b border-zinc-700/50 p-0.5"
+                      style={{ backgroundColor: `${colors.accent}10` }}
+                    >
+                      <div
+                        className={`h-full rounded-xl flex flex-col justify-center relative overflow-hidden transition-all duration-200 ${style.glow}`}
+                        style={{
+                          padding: "5px 7px",
+                          backgroundColor: style.backgroundColor,
+                          border: style.border,
+                        }}
+                      >
+                        {/* Band name */}
+                        <div className="flex-1 min-h-0 flex items-center">
+                          <h3 className={`text-sm font-bold leading-tight line-clamp-2 text-center w-full ${style.textColor}`}>
+                            {band.name}
+                          </h3>
+                        </div>
+
+                        {/* Comparison indicator */}
+                        {band.comparison !== "none" && (
+                          <div className="flex items-center justify-center gap-1 mt-1">
+                            <span className="text-xs">{style.icon}</span>
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold border ${style.labelColor}`}>
+                              {style.label}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
