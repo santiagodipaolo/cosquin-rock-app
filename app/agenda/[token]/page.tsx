@@ -135,7 +135,7 @@ export default function SharedAgendaPage({ params }: { params: Promise<{ token: 
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-zinc-950 overflow-y-auto">
       {/* Header */}
       <header className="bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 text-white py-8 px-4 border-b border-zinc-800">
         <div className="max-w-2xl mx-auto text-center">
@@ -165,7 +165,7 @@ export default function SharedAgendaPage({ params }: { params: Promise<{ token: 
       </header>
 
       {/* Content */}
-      <div className="max-w-2xl mx-auto p-4 pb-8">
+      <div className="max-w-2xl mx-auto p-4 pb-24">
         {agenda.bands.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">🎵</div>
