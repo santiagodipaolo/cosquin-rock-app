@@ -242,18 +242,24 @@ export default function ComparePage({ params }: { params: Promise<{ friendId: st
           {/* Stage columns */}
           {stages.map((stage) => {
             const colors = stageColors[stage];
+            if (!colors) {
+              console.error(`Stage "${stage}" not found in stageColors`);
+              return null;
+            }
             return (
               <div key={stage} className="flex-1 min-w-[120px] border-r border-zinc-700/40">
                 {/* Stage header */}
                 <div className={`h-10 border-b border-zinc-800/50 flex items-center justify-center px-1 bg-gradient-to-r ${colors.gradient}`}>
                   <span className="text-[10px] font-bold text-white text-center drop-shadow-sm leading-tight">
-                    {stageName[stage]}
+                    {stageName[stage] || stage}
                   </span>
                 </div>
 
                 {/* Bands */}
                 {filteredTimeSlots.map((slot) => {
                   const band = slot.bands[stage];
+                  if (!colors) return null;
+
                   if (!band) {
                     return (
                       <div
