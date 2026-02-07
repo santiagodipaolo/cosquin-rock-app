@@ -1,0 +1,317 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+
+type Group = {
+  id: string;
+  name: string;
+  inviteCode: string;
+  members: Array<{
+    user: {
+      username: string;
+    };
+  }>;
+};
+
+export default function GroupsPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [joining, setJoining] = useState(false);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    } else if (status === "authenticated") {
+      fetchGroups();
+    }
+  }, [status, router]);
+
+  const fetchGroups = async () => {
+    try {
+      const res = await fetch("/api/groups");
+      const data = await res.json();
+      setGroups(data);
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateGroup = async () => {
+    if (!groupName.trim()) return;
+
+    setCreating(true);
+    try {
+      const res = await fetch("/api/groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: groupName.trim() }),
+      });
+
+      if (res.ok) {
+        const newGroup = await res.json();
+        setGroups([...groups, newGroup]);
+        setShowCreateModal(false);
+        setGroupName("");
+      }
+    } catch (error) {
+      console.error("Error creating group:", error);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleJoinGroup = async () => {
+    if (!inviteCode.trim()) return;
+
+    setJoining(true);
+    try {
+      const res = await fetch("/api/groups/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inviteCode: inviteCode.trim().toUpperCase() }),
+      });
+
+      if (res.ok) {
+        const group = await res.json();
+        setGroups([...groups, group]);
+        setShowJoinModal(false);
+        setInviteCode("");
+      } else {
+        const error = await res.json();
+        alert(error.error || "Error al unirse al grupo");
+      }
+    } catch (error) {
+      console.error("Error joining group:", error);
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  const copyInviteCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    alert(`Código copiado: ${code}`);
+  };
+
+  if (status === "loading" || status === "unauthenticated") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-text-secondary">Cargando...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background pb-20">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="px-4 py-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold text-text-primary">👥 Grupos</h1>
+            <button
+              onClick={() => router.push("/schedule")}
+              className="text-text-secondary hover:text-primary"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="p-4">
+        {/* Action buttons */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowCreateModal(true)}
+            className="py-3 px-4 bg-primary text-white rounded-lg font-medium shadow-md hover:bg-primary-dark transition-colors"
+          >
+            + Crear Grupo
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowJoinModal(true)}
+            className="py-3 px-4 bg-white text-primary border-2 border-primary rounded-lg font-medium hover:bg-primary/5 transition-colors"
+          >
+            Unirse
+          </motion.button>
+        </div>
+
+        {/* Groups list */}
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2].map((i) => (
+              <div key={i} className="bg-white rounded-lg p-4 animate-pulse">
+                <div className="h-5 bg-gray-200 rounded w-1/2 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+              </div>
+            ))}
+          </div>
+        ) : groups.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">👥</div>
+            <p className="text-text-secondary mb-4">No estás en ningún grupo</p>
+            <p className="text-sm text-text-tertiary">
+              Creá un grupo o unite con un código
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {groups.map((group, index) => (
+              <motion.div
+                key={group.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-white rounded-lg p-4 shadow-sm border border-gray-200"
+              >
+                <h3 className="font-semibold text-text-primary mb-2">{group.name}</h3>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-text-secondary">
+                    {group.members.length} miembros
+                  </span>
+                  <button
+                    onClick={() => copyInviteCode(group.inviteCode)}
+                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-text-primary font-mono transition-colors"
+                  >
+                    {group.inviteCode} 📋
+                  </button>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {group.members.slice(0, 5).map((member, i) => (
+                    <div
+                      key={i}
+                      className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium"
+                    >
+                      @{member.user.username}
+                    </div>
+                  ))}
+                  {group.members.length > 5 && (
+                    <div className="px-2 py-1 bg-gray-100 text-text-secondary rounded text-xs">
+                      +{group.members.length - 5} más
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Create Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            className="bg-white rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-md"
+          >
+            <h2 className="text-xl font-bold mb-4">Crear Grupo</h2>
+            <input
+              type="text"
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              placeholder="Ej: Amigos del Cole"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary mb-4"
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="flex-1 py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateGroup}
+                disabled={creating || !groupName.trim()}
+                className="flex-1 py-2 px-4 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+              >
+                {creating ? "Creando..." : "Crear"}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Join Modal */}
+      {showJoinModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            className="bg-white rounded-t-2xl sm:rounded-2xl p-6 w-full max-w-md"
+          >
+            <h2 className="text-xl font-bold mb-4">Unirse a Grupo</h2>
+            <input
+              type="text"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+              placeholder="Código (ej: ABC123)"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary mb-4 font-mono uppercase"
+              autoFocus
+              maxLength={6}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowJoinModal(false)}
+                className="flex-1 py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleJoinGroup}
+                disabled={joining || !inviteCode.trim()}
+                className="flex-1 py-2 px-4 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+              >
+                {joining ? "Uniéndose..." : "Unirse"}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2">
+        <div className="flex justify-around items-center max-w-lg mx-auto">
+          <button
+            onClick={() => router.push("/schedule")}
+            className="flex flex-col items-center text-text-secondary hover:text-primary transition-colors"
+          >
+            <span className="text-2xl mb-1">🏠</span>
+            <span className="text-xs">Grilla</span>
+          </button>
+          <button
+            onClick={() => router.push("/my-bands")}
+            className="flex flex-col items-center text-text-secondary hover:text-primary transition-colors"
+          >
+            <span className="text-2xl mb-1">⭐</span>
+            <span className="text-xs">Mis Bandas</span>
+          </button>
+          <button className="flex flex-col items-center text-primary">
+            <span className="text-2xl mb-1">👥</span>
+            <span className="text-xs font-medium">Grupos</span>
+          </button>
+          <button
+            onClick={() => router.push("/profile")}
+            className="flex flex-col items-center text-text-secondary hover:text-primary transition-colors"
+          >
+            <span className="text-2xl mb-1">👤</span>
+            <span className="text-xs">Perfil</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  );
+}

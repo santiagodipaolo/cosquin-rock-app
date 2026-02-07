@@ -1,0 +1,106 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  pin       String?  // 4-digit PIN hash for auth
+  email     String?
+  avatar    String?  // emoji o color hex
+  createdAt DateTime @default(now())
+
+  attendances      Attendance[]
+  groupMemberships GroupMember[]
+  shareTokens      ShareToken[]
+  friendRequestsSent     Friendship[] @relation("friendRequestsSent")
+  friendRequestsReceived Friendship[] @relation("friendRequestsReceived")
+}
+
+model Group {
+  id         String   @id @default(uuid())
+  name       String
+  inviteCode String   @unique
+  createdBy  String
+  createdAt  DateTime @default(now())
+
+  members GroupMember[]
+}
+
+model GroupMember {
+  id       String   @id @default(uuid())
+  groupId  String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+}
+
+model Band {
+  id        String   @id @default(uuid())
+  name      String
+  day       Int      // 1 o 2
+  stage     String   // SUR, NORTE, MONTANA, BOOM_ERANG, CASITA_BLUES, PARAGUAY
+  startTime DateTime
+  endTime   DateTime
+  imageUrl  String?
+
+  attendances Attendance[]
+
+  @@index([day, startTime])
+}
+
+model Attendance {
+  id        String   @id @default(uuid())
+  userId    String
+  bandId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  band Band @relation(fields: [bandId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bandId])
+  @@index([bandId])
+  @@index([userId])
+}
+
+model Friendship {
+  id          String   @id @default(uuid())
+  requesterId String
+  addresseeId String
+  status      String   // "pending" | "accepted"
+  createdAt   DateTime @default(now())
+
+  requester User @relation("friendRequestsSent", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("friendRequestsReceived", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([requesterId])
+  @@index([addresseeId])
+}
+
+model ShareToken {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  type      String    // "day1" | "day2" | "both"
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
