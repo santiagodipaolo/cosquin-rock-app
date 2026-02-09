@@ -37,7 +37,7 @@ type PendingRequest = {
 export default function GroupsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"groups" | "friends" | "comunidad">("groups");
+  const [activeTab, setActiveTab] = useState<"groups" | "friends">("groups");
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -63,6 +63,8 @@ export default function GroupsPage() {
   const [friendError, setFriendError] = useState("");
 
   // Community state
+  const [sendingFriendTo, setSendingFriendTo] = useState<string | null>(null);
+
   type CommunityUser = {
     id: string;
     username: string;
@@ -79,6 +81,7 @@ export default function GroupsPage() {
     } else if (status === "authenticated") {
       fetchGroups();
       fetchFriends();
+      fetchCommunity();
       checkPendingGroupCode();
     }
   }, [status, router]);
@@ -364,6 +367,32 @@ export default function GroupsPage() {
     }
   };
 
+  const handleAddFriendFromCommunity = async (username: string) => {
+    setSendingFriendTo(username);
+    try {
+      const res = await fetch("/api/friends", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: username.toLowerCase() }),
+      });
+      if (res.ok) {
+        fetchFriends();
+      }
+    } catch (error) {
+      console.error("Error sending friend request:", error);
+    } finally {
+      setSendingFriendTo(null);
+    }
+  };
+
+  const getFriendStatus = (userId: string, username: string): "self" | "friend" | "pending_sent" | "pending_received" | "none" => {
+    if (userId === session?.user?.id) return "self";
+    if (friends.some((f) => f.id === userId)) return "friend";
+    if (pendingSent.some((p) => p.username === username)) return "pending_sent";
+    if (pendingReceived.some((p) => p.username === username)) return "pending_received";
+    return "none";
+  };
+
   if (status === "loading" || status === "unauthenticated") {
     return (
       <div className="h-screen bg-zinc-950 flex items-center justify-center">
@@ -415,16 +444,6 @@ export default function GroupsPage() {
                 </span>
               )}
             </button>
-            <button
-              onClick={() => { setActiveTab("comunidad"); fetchCommunity(); }}
-              className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                activeTab === "comunidad"
-                  ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-primary/20"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              Comunidad
-            </button>
           </div>
         </div>
       </header>
@@ -447,76 +466,7 @@ export default function GroupsPage() {
       </AnimatePresence>
 
       <div className="flex-1 overflow-auto min-h-0 pb-16">
-        {activeTab === "comunidad" ? (
-          /* ===== COMUNIDAD TAB ===== */
-          <div className="p-4">
-            {communityLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-zinc-900 rounded-xl p-4 animate-pulse">
-                    <div className="h-5 bg-zinc-800 rounded w-1/2 mb-2" />
-                    <div className="h-4 bg-zinc-800 rounded w-1/3" />
-                  </div>
-                ))}
-              </div>
-            ) : communityUsers.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">🌍</div>
-                <p className="text-zinc-400 mb-2">No hay usuarios todavía</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {communityUsers.map((user, index) => (
-                  <motion.div
-                    key={user.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.03 }}
-                    className="flex items-center justify-between py-3 px-4 bg-zinc-900 rounded-xl border border-zinc-800"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-9 h-9 rounded-full flex items-center justify-center text-lg flex-shrink-0"
-                        style={{ backgroundColor: user.avatar || "#FF6B35" }}
-                      >
-                        🎸
-                      </div>
-                      <div>
-                        <span className="text-sm text-white font-medium">@{user.username}</span>
-                        {user.instagram && (
-                          <a
-                            href={`instagram://user?username=${user.instagram}`}
-                            onClick={(e) => {
-                              // Fallback a web si no abre la app en 500ms
-                              const timer = setTimeout(() => {
-                                window.open(`https://instagram.com/${user.instagram}`, "_blank");
-                              }, 500);
-                              // Si la app abrió, cancelar fallback
-                              const handleBlur = () => {
-                                clearTimeout(timer);
-                                window.removeEventListener("blur", handleBlur);
-                              };
-                              window.addEventListener("blur", handleBlur);
-                            }}
-                            className="flex items-center gap-1 mt-0.5"
-                          >
-                            <svg className="w-3 h-3 text-pink-400" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
-                            </svg>
-                            <span className="text-xs text-pink-400">@{user.instagram}</span>
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                    {user.id === session?.user?.id && (
-                      <span className="text-[10px] px-1.5 py-0.5 bg-primary/20 text-primary rounded-full font-medium">Vos</span>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : activeTab === "groups" ? (
+        {activeTab === "groups" ? (
           /* ===== GROUPS TAB ===== */
           <div className="p-4">
             {/* Action buttons */}
@@ -882,6 +832,101 @@ export default function GroupsPage() {
             )}
           </div>
         )}
+
+        {/* ===== COMUNIDAD (siempre visible) ===== */}
+        <div className="px-4 pb-4">
+          <div className="border-t border-zinc-800 pt-4 mt-2">
+            <h3 className="text-sm font-semibold text-zinc-300 mb-3">Comunidad</h3>
+            {communityLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-zinc-900 rounded-xl p-4 animate-pulse">
+                    <div className="h-5 bg-zinc-800 rounded w-1/2 mb-2" />
+                    <div className="h-4 bg-zinc-800 rounded w-1/3" />
+                  </div>
+                ))}
+              </div>
+            ) : communityUsers.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-2">🌍</div>
+                <p className="text-zinc-500 text-sm">No hay usuarios todavia</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {communityUsers.map((user, index) => {
+                  const friendStatus = getFriendStatus(user.id, user.username);
+                  return (
+                    <motion.div
+                      key={user.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.03 }}
+                      className="flex items-center justify-between py-3 px-4 bg-zinc-900 rounded-xl border border-zinc-800"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-lg flex-shrink-0"
+                          style={{ backgroundColor: user.avatar || "#FF6B35" }}
+                        >
+                          🎸
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-sm text-white font-medium block truncate">@{user.username}</span>
+                          {user.instagram && (
+                            <a
+                              href={`instagram://user?username=${user.instagram}`}
+                              onClick={() => {
+                                const timer = setTimeout(() => {
+                                  window.open(`https://instagram.com/${user.instagram}`, "_blank");
+                                }, 500);
+                                const handleBlur = () => {
+                                  clearTimeout(timer);
+                                  window.removeEventListener("blur", handleBlur);
+                                };
+                                window.addEventListener("blur", handleBlur);
+                              }}
+                              className="flex items-center gap-1 mt-0.5"
+                            >
+                              <svg className="w-3 h-3 text-pink-400" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                              </svg>
+                              <span className="text-xs text-pink-400">@{user.instagram}</span>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0 ml-2">
+                        {friendStatus === "self" ? (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-primary/20 text-primary rounded-full font-medium">Vos</span>
+                        ) : friendStatus === "friend" ? (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full font-medium">Amigos</span>
+                        ) : friendStatus === "pending_sent" ? (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-zinc-800 text-zinc-500 rounded-full font-medium">Pendiente</span>
+                        ) : friendStatus === "pending_received" ? (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-primary/20 text-primary rounded-full font-medium">Te agrego</span>
+                        ) : (
+                          <button
+                            onClick={() => handleAddFriendFromCommunity(user.username)}
+                            disabled={sendingFriendTo === user.username}
+                            className="w-7 h-7 flex items-center justify-center bg-primary/20 hover:bg-primary/30 text-primary rounded-full transition-colors disabled:opacity-50"
+                          >
+                            {sendingFriendTo === user.username ? (
+                              <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                              </svg>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Create Modal */}

@@ -10,6 +10,12 @@ export async function GET() {
     }
 
     const users = await prisma.user.findMany({
+      where: {
+        OR: [
+          { isPublic: true },
+          { id: session.user.id },
+        ],
+      },
       select: { id: true, username: true, avatar: true, instagram: true },
       orderBy: { username: "asc" },
     });

@@ -14,6 +14,8 @@ export default function ProfilePage() {
   const [savingIg, setSavingIg] = useState(false);
   const [igSaved, setIgSaved] = useState(false);
   const [igError, setIgError] = useState("");
+  const [isPublic, setIsPublic] = useState(true);
+  const [savingPublic, setSavingPublic] = useState(false);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -22,6 +24,7 @@ export default function ProfilePage() {
         .then((data) => {
           setInstagram(data.instagram || "");
           setOriginalInstagram(data.instagram || "");
+          setIsPublic(data.isPublic ?? true);
         })
         .catch(() => {});
     }
@@ -51,6 +54,22 @@ export default function ProfilePage() {
       setIgError("Error de conexión");
     } finally {
       setSavingIg(false);
+    }
+  };
+
+  const handleTogglePublic = async (newValue: boolean) => {
+    setIsPublic(newValue);
+    setSavingPublic(true);
+    try {
+      await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instagram, isPublic: newValue }),
+      });
+    } catch {
+      setIsPublic(!newValue);
+    } finally {
+      setSavingPublic(false);
     }
   };
 
@@ -137,6 +156,29 @@ export default function ProfilePage() {
                 </div>
                 {igError && <p className="text-red-400 text-xs mt-1 text-left">{igError}</p>}
                 {igSaved && <p className="text-green-400 text-xs mt-1 text-left">Guardado</p>}
+              </div>
+
+              {/* Visibilidad en Comunidad */}
+              <div className="mt-4 w-full max-w-xs mx-auto">
+                <div className="flex items-center justify-between py-2">
+                  <div className="text-left">
+                    <label className="text-xs text-zinc-400 block">Aparecer en Comunidad</label>
+                    <p className="text-[10px] text-zinc-600">Otros usuarios pueden verte</p>
+                  </div>
+                  <button
+                    onClick={() => handleTogglePublic(!isPublic)}
+                    disabled={savingPublic}
+                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                      isPublic ? "bg-primary" : "bg-zinc-700"
+                    } ${savingPublic ? "opacity-50" : ""}`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                        isPublic ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>

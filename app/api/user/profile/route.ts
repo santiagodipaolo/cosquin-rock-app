@@ -11,7 +11,7 @@ export async function GET() {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { username: true, avatar: true, instagram: true },
+      select: { username: true, avatar: true, instagram: true, isPublic: true },
     });
 
     if (!user) {
@@ -32,7 +32,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const { instagram } = await request.json();
+    const { instagram, isPublic } = await request.json();
 
     // Sanitizar: quitar @ del inicio si lo tiene, y espacios
     let handle = instagram?.trim() || null;
@@ -47,10 +47,15 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    const data: { instagram?: string | null; isPublic?: boolean } = { instagram: handle };
+    if (typeof isPublic === "boolean") {
+      data.isPublic = isPublic;
+    }
+
     const user = await prisma.user.update({
       where: { id: session.user.id },
-      data: { instagram: handle },
-      select: { username: true, avatar: true, instagram: true },
+      data,
+      select: { username: true, avatar: true, instagram: true, isPublic: true },
     });
 
     return NextResponse.json(user);
