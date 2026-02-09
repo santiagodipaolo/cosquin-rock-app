@@ -9,9 +9,10 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [pin, setPin] = useState(["", "", "", ""]);
-  const [step, setStep] = useState<"username" | "pin" | "register-pin" | "setup-pin">("username");
+  const [step, setStep] = useState<"username" | "pin" | "register-pin" | "setup-pin" | "instagram">("username");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [instagram, setInstagram] = useState("");
   const pinRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
   const router = useRouter();
 
@@ -59,7 +60,12 @@ export default function LoginPage() {
     if (value && index === 3) {
       const fullPin = [...newPin].join("");
       if (fullPin.length === 4) {
-        handlePinSubmit(fullPin);
+        if (step === "register-pin") {
+          // Para usuarios nuevos, pasar al paso de Instagram
+          setStep("instagram");
+        } else {
+          handlePinSubmit(fullPin);
+        }
       }
     }
   };
@@ -78,11 +84,12 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const isRegistering = step === "register-pin" || step === "setup-pin";
+      const isRegistering = step === "register-pin" || step === "setup-pin" || step === "instagram";
       const result = await signIn("credentials", {
         username: username.trim(),
         pin: pinCode,
         isRegistering: isRegistering ? "true" : "false",
+        instagram: instagram.trim() || "",
         redirect: false,
       });
 
@@ -137,7 +144,67 @@ export default function LoginPage() {
           <p className="text-zinc-400 text-sm">Coordiná con tus amigos</p>
         </div>
 
-        {step === "username" ? (
+        {step === "instagram" ? (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="bg-zinc-900/80 backdrop-blur-lg rounded-2xl p-6 border border-zinc-800"
+          >
+            <button
+              onClick={() => { setStep("register-pin"); setError(""); setPin(["", "", "", ""]); }}
+              className="text-zinc-500 hover:text-white transition-colors mb-4 flex items-center gap-1 text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              Volver
+            </button>
+
+            <div className="text-center mb-6">
+              <h2 className="text-lg font-bold text-white mb-1">Tu Instagram</h2>
+              <p className="text-zinc-400 text-sm">Así tus amigos te pueden encontrar</p>
+            </div>
+
+            <div className="mb-4">
+              <div className="flex items-center gap-0">
+                <span className="px-3 py-3 bg-zinc-700 border border-zinc-600 border-r-0 rounded-l-xl text-zinc-400 text-base">@</span>
+                <input
+                  type="text"
+                  value={instagram}
+                  onChange={(e) => setInstagram(e.target.value)}
+                  className="flex-1 px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-r-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="tu_usuario"
+                  autoComplete="off"
+                  disabled={loading}
+                  autoFocus
+                />
+              </div>
+              <p className="text-zinc-500 text-xs mt-2">Opcional — podés agregarlo después desde tu perfil</p>
+            </div>
+
+            {error && (
+              <p className="text-red-400 text-sm mb-3 text-center">{error}</p>
+            )}
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => handlePinSubmit()}
+              disabled={loading}
+              className="w-full py-3 px-6 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-xl shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "Creando cuenta..." : "Continuar"}
+            </motion.button>
+
+            <button
+              onClick={() => { setInstagram(""); handlePinSubmit(); }}
+              disabled={loading}
+              className="w-full mt-3 py-2 text-zinc-500 hover:text-zinc-300 text-sm transition-colors disabled:opacity-50"
+            >
+              Omitir
+            </button>
+          </motion.div>
+        ) : step === "username" ? (
           <motion.form
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -235,6 +302,8 @@ export default function LoginPage() {
             ? "Si no tenes cuenta, se crea automáticamente"
             : step === "pin"
             ? "Olvidaste tu PIN? Pedile a un admin"
+            : step === "instagram"
+            ? "Podés cambiarlo después desde tu perfil"
             : "Recordá tu PIN, lo vas a necesitar para entrar"}
         </p>
 

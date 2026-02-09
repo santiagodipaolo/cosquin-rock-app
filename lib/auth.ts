@@ -28,6 +28,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         username: { label: "Username", type: "text" },
         pin: { label: "PIN", type: "text" },
         isRegistering: { label: "IsRegistering", type: "text" },
+        instagram: { label: "Instagram", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.username) {
@@ -38,6 +39,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const username = (credentials.username as string).trim().toLowerCase();
         const pin = (credentials.pin as string) || "";
         const isRegistering = (credentials.isRegistering as string) === "true";
+
+        // Sanitizar Instagram handle
+        let instagramHandle: string | null = null;
+        const rawInstagram = ((credentials.instagram as string) || "").trim();
+        if (rawInstagram) {
+          const cleaned = rawInstagram.replace(/^@/, "").trim();
+          if (/^[a-zA-Z0-9._]{1,30}$/.test(cleaned)) {
+            instagramHandle = cleaned;
+          }
+        }
 
         // Buscar usuario existente (case-insensitive via lowercase)
         let user = await prisma.user.findUnique({
@@ -57,6 +68,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               username,
               pin: hashedPin,
               avatar: randomColor,
+              ...(instagramHandle && { instagram: instagramHandle }),
             },
           });
         } else {
