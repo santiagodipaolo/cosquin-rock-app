@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -8,6 +9,50 @@ import Image from "next/image";
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [instagram, setInstagram] = useState("");
+  const [originalInstagram, setOriginalInstagram] = useState("");
+  const [savingIg, setSavingIg] = useState(false);
+  const [igSaved, setIgSaved] = useState(false);
+  const [igError, setIgError] = useState("");
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetch("/api/user/profile")
+        .then((res) => res.json())
+        .then((data) => {
+          setInstagram(data.instagram || "");
+          setOriginalInstagram(data.instagram || "");
+        })
+        .catch(() => {});
+    }
+  }, [status]);
+
+  const handleSaveInstagram = async () => {
+    setSavingIg(true);
+    setIgError("");
+    setIgSaved(false);
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instagram }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOriginalInstagram(data.instagram || "");
+        setInstagram(data.instagram || "");
+        setIgSaved(true);
+        setTimeout(() => setIgSaved(false), 2000);
+      } else {
+        const err = await res.json();
+        setIgError(err.error || "Error al guardar");
+      }
+    } catch {
+      setIgError("Error de conexión");
+    } finally {
+      setSavingIg(false);
+    }
+  };
 
   if (status === "loading") {
     return (
@@ -64,9 +109,35 @@ export default function ProfilePage() {
               <h2 className="text-2xl font-bold text-white mb-1">
                 @{session?.user?.name}
               </h2>
-              <p className="text-zinc-500 text-sm">
+              <p className="text-zinc-500 text-sm mb-4">
                 {session?.user?.email || "Usuario de Cosquin Rock"}
               </p>
+
+              {/* Instagram */}
+              <div className="mt-3 w-full max-w-xs mx-auto">
+                <label className="text-xs text-zinc-400 mb-1 block text-left">Instagram</label>
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">@</span>
+                    <input
+                      type="text"
+                      value={instagram}
+                      onChange={(e) => { setInstagram(e.target.value.replace(/^@/, "")); setIgError(""); setIgSaved(false); }}
+                      placeholder="tu_usuario"
+                      className="w-full pl-7 pr-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                    />
+                  </div>
+                  <button
+                    onClick={handleSaveInstagram}
+                    disabled={savingIg || instagram === originalInstagram}
+                    className="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium disabled:opacity-40 transition-all"
+                  >
+                    {savingIg ? "..." : igSaved ? "✓" : "Guardar"}
+                  </button>
+                </div>
+                {igError && <p className="text-red-400 text-xs mt-1 text-left">{igError}</p>}
+                {igSaved && <p className="text-green-400 text-xs mt-1 text-left">Guardado</p>}
+              </div>
             </div>
           </motion.div>
 

@@ -37,7 +37,7 @@ type PendingRequest = {
 export default function GroupsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"groups" | "friends">("groups");
+  const [activeTab, setActiveTab] = useState<"groups" | "friends" | "comunidad">("groups");
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -61,6 +61,17 @@ export default function GroupsPage() {
   const [friendUsername, setFriendUsername] = useState("");
   const [addingFriend, setAddingFriend] = useState(false);
   const [friendError, setFriendError] = useState("");
+
+  // Community state
+  type CommunityUser = {
+    id: string;
+    username: string;
+    avatar: string | null;
+    instagram: string | null;
+  };
+  const [communityUsers, setCommunityUsers] = useState<CommunityUser[]>([]);
+  const [communityLoading, setCommunityLoading] = useState(false);
+  const [communityLoaded, setCommunityLoaded] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -118,6 +129,21 @@ export default function GroupsPage() {
       console.error("Error fetching friends:", error);
     } finally {
       setFriendsLoading(false);
+    }
+  };
+
+  const fetchCommunity = async () => {
+    if (communityLoaded) return;
+    setCommunityLoading(true);
+    try {
+      const res = await fetch("/api/users");
+      const data = await res.json();
+      setCommunityUsers(data);
+      setCommunityLoaded(true);
+    } catch (error) {
+      console.error("Error fetching community:", error);
+    } finally {
+      setCommunityLoading(false);
     }
   };
 
@@ -385,6 +411,16 @@ export default function GroupsPage() {
                 </span>
               )}
             </button>
+            <button
+              onClick={() => { setActiveTab("comunidad"); fetchCommunity(); }}
+              className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                activeTab === "comunidad"
+                  ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-primary/20"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              Comunidad
+            </button>
           </div>
         </div>
       </header>
@@ -407,7 +443,76 @@ export default function GroupsPage() {
       </AnimatePresence>
 
       <div className="flex-1 overflow-auto min-h-0 pb-16">
-        {activeTab === "groups" ? (
+        {activeTab === "comunidad" ? (
+          /* ===== COMUNIDAD TAB ===== */
+          <div className="p-4">
+            {communityLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-zinc-900 rounded-xl p-4 animate-pulse">
+                    <div className="h-5 bg-zinc-800 rounded w-1/2 mb-2" />
+                    <div className="h-4 bg-zinc-800 rounded w-1/3" />
+                  </div>
+                ))}
+              </div>
+            ) : communityUsers.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">🌍</div>
+                <p className="text-zinc-400 mb-2">No hay usuarios todavía</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {communityUsers.map((user, index) => (
+                  <motion.div
+                    key={user.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                    className="flex items-center justify-between py-3 px-4 bg-zinc-900 rounded-xl border border-zinc-800"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-lg flex-shrink-0"
+                        style={{ backgroundColor: user.avatar || "#FF6B35" }}
+                      >
+                        🎸
+                      </div>
+                      <div>
+                        <span className="text-sm text-white font-medium">@{user.username}</span>
+                        {user.instagram && (
+                          <a
+                            href={`instagram://user?username=${user.instagram}`}
+                            onClick={(e) => {
+                              // Fallback a web si no abre la app en 500ms
+                              const timer = setTimeout(() => {
+                                window.open(`https://instagram.com/${user.instagram}`, "_blank");
+                              }, 500);
+                              // Si la app abrió, cancelar fallback
+                              const handleBlur = () => {
+                                clearTimeout(timer);
+                                window.removeEventListener("blur", handleBlur);
+                              };
+                              window.addEventListener("blur", handleBlur);
+                            }}
+                            className="flex items-center gap-1 mt-0.5"
+                          >
+                            <svg className="w-3 h-3 text-pink-400" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                            </svg>
+                            <span className="text-xs text-pink-400">@{user.instagram}</span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    {user.id === session?.user?.id && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-primary/20 text-primary rounded-full font-medium">Vos</span>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : activeTab === "groups" ? (
           /* ===== GROUPS TAB ===== */
           <div className="p-4">
             {/* Action buttons */}

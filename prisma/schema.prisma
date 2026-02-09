@@ -15,6 +15,7 @@ model User {
   pin       String?  // 4-digit PIN hash for auth
   email     String?
   avatar    String?  // emoji o color hex
+  instagram String?  // handle de Instagram (sin @)
   createdAt DateTime @default(now())
 
   attendances      Attendance[]
