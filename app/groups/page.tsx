@@ -74,6 +74,8 @@ export default function GroupsPage() {
   const [communityUsers, setCommunityUsers] = useState<CommunityUser[]>([]);
   const [communityLoading, setCommunityLoading] = useState(false);
   const [communityLoaded, setCommunityLoaded] = useState(false);
+  const [isPublic, setIsPublic] = useState<boolean | null>(null);
+  const [cancellingFriendship, setCancellingFriendship] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -82,6 +84,7 @@ export default function GroupsPage() {
       fetchGroups();
       fetchFriends();
       fetchCommunity();
+      fetchVisibility();
       checkPendingGroupCode();
     }
   }, [status, router]);
@@ -364,6 +367,28 @@ export default function GroupsPage() {
       }
     } catch (error) {
       console.error("Error removing friend:", error);
+    }
+  };
+
+  const fetchVisibility = async () => {
+    try {
+      const res = await fetch("/api/user/profile");
+      const data = await res.json();
+      setIsPublic(data.isPublic ?? true);
+    } catch {}
+  };
+
+  const handleCancelFriendRequest = async (friendshipId: string) => {
+    setCancellingFriendship(friendshipId);
+    try {
+      const res = await fetch(`/api/friends/${friendshipId}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchFriends();
+      }
+    } catch (error) {
+      console.error("Error cancelling friend request:", error);
+    } finally {
+      setCancellingFriendship(null);
     }
   };
 
@@ -836,7 +861,16 @@ export default function GroupsPage() {
         {/* ===== COMUNIDAD (siempre visible) ===== */}
         <div className="px-4 pb-4">
           <div className="border-t border-zinc-800 pt-4 mt-2">
-            <h3 className="text-sm font-semibold text-zinc-300 mb-3">Comunidad</h3>
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-sm font-semibold text-zinc-300">Comunidad</h3>
+              {isPublic !== null && (
+                isPublic ? (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full font-medium">visible</span>
+                ) : (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-zinc-800 text-zinc-500 rounded-full font-medium">no visible</span>
+                )
+              )}
+            </div>
             {communityLoading ? (
               <div className="space-y-2">
                 {[1, 2, 3].map((i) => (
@@ -901,21 +935,33 @@ export default function GroupsPage() {
                         ) : friendStatus === "friend" ? (
                           <span className="text-[10px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded-full font-medium">Amigos</span>
                         ) : friendStatus === "pending_sent" ? (
-                          <span className="text-[10px] px-1.5 py-0.5 bg-zinc-800 text-zinc-500 rounded-full font-medium">Pendiente</span>
+                          <button
+                            onClick={() => {
+                              const req = pendingSent.find((p) => p.username === user.username);
+                              if (req) handleCancelFriendRequest(req.friendshipId);
+                            }}
+                            disabled={cancellingFriendship === pendingSent.find((p) => p.username === user.username)?.friendshipId}
+                            className="text-[10px] px-2 py-1 bg-zinc-800 hover:bg-red-500/20 text-zinc-500 hover:text-red-400 rounded-full font-medium transition-colors disabled:opacity-50"
+                          >
+                            Pendiente x
+                          </button>
                         ) : friendStatus === "pending_received" ? (
                           <span className="text-[10px] px-1.5 py-0.5 bg-primary/20 text-primary rounded-full font-medium">Te agrego</span>
                         ) : (
                           <button
                             onClick={() => handleAddFriendFromCommunity(user.username)}
                             disabled={sendingFriendTo === user.username}
-                            className="w-7 h-7 flex items-center justify-center bg-primary/20 hover:bg-primary/30 text-primary rounded-full transition-colors disabled:opacity-50"
+                            className="text-[10px] px-2 py-1 bg-primary/20 hover:bg-primary/30 text-primary rounded-full font-medium transition-colors disabled:opacity-50 flex items-center gap-1"
                           >
                             {sendingFriendTo === user.username ? (
                               <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
                             ) : (
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                              </svg>
+                              <>
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                </svg>
+                                Agregar
+                              </>
                             )}
                           </button>
                         )}
