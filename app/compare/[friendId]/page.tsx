@@ -166,7 +166,7 @@ export default function ComparePage({ params }: { params: Promise<{ friendId: st
   }
 
   return (
-    <div className="h-screen bg-zinc-950 flex flex-col overflow-hidden">
+    <div className="h-screen bg-zinc-950 flex flex-col overflow-hidden" style={{ height: '100dvh' }}>
       {/* Header */}
       <header className="bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800/50 flex-shrink-0 z-20">
         <div className="p-4">
@@ -208,7 +208,7 @@ export default function ComparePage({ params }: { params: Promise<{ friendId: st
                   : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              Viernes 14
+              Sabado 14
             </button>
             <button
               onClick={() => setActiveDay(2)}
@@ -218,7 +218,7 @@ export default function ComparePage({ params }: { params: Promise<{ friendId: st
                   : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              Sábado 15
+              Domingo 15
             </button>
           </div>
         </div>
@@ -233,7 +233,7 @@ export default function ComparePage({ params }: { params: Promise<{ friendId: st
               <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Hora</span>
             </div>
             {filteredTimeSlots.map((slot) => (
-              <div key={slot.time} className="h-[100px] border-b border-zinc-700/50 flex items-center justify-center bg-zinc-950">
+              <div key={slot.time} className="h-[70px] border-b border-zinc-700/50 flex items-center justify-center bg-zinc-950">
                 <span className="text-xs font-bold tabular-nums text-zinc-300">{slot.time}</span>
               </div>
             ))}
@@ -264,7 +264,7 @@ export default function ComparePage({ params }: { params: Promise<{ friendId: st
                     return (
                       <div
                         key={`${stage}-${slot.time}`}
-                        className="h-[100px] border-b border-zinc-700/50"
+                        className="h-[70px] border-b border-zinc-700/50"
                         style={{ backgroundColor: `${colors.accent}08` }}
                       />
                     );
@@ -275,7 +275,7 @@ export default function ComparePage({ params }: { params: Promise<{ friendId: st
                   return (
                     <div
                       key={`${stage}-${slot.time}`}
-                      className="h-[100px] border-b border-zinc-700/50 p-0.5"
+                      className="h-[70px] border-b border-zinc-700/50 p-0.5"
                       style={{ backgroundColor: `${colors.accent}10` }}
                     >
                       <div

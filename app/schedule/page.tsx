@@ -240,7 +240,7 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="h-screen bg-zinc-950 flex flex-col overflow-hidden">
+    <div className="h-screen bg-zinc-950 flex flex-col overflow-hidden" style={{ height: '100dvh' }}>
       {/* Header */}
       <header className="bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800/50 flex-shrink-0 z-20">
         <div className="px-4 pt-3 pb-2">
@@ -399,7 +399,7 @@ export default function SchedulePage() {
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              Dia 1 - Viernes 14
+              Dia 1 - Sabado 14
             </button>
             <button
               onClick={() => { setSelectedDay(2); setActiveStageFilter(null); }}
@@ -409,7 +409,7 @@ export default function SchedulePage() {
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              Dia 2 - Sabado 15
+              Dia 2 - Domingo 15
             </button>
           </div>
 
@@ -474,7 +474,7 @@ export default function SchedulePage() {
                       </div>
                     </div>
                   )}
-                  <div className="h-[100px] border-b border-zinc-700/50 flex items-center justify-center bg-zinc-950">
+                  <div className="h-[70px] border-b border-zinc-700/50 flex items-center justify-center bg-zinc-950">
                     <span className={`text-xs font-bold tabular-nums ${
                       timeLinePosition !== -1 && i < timeLinePosition ? "text-zinc-600" : "text-zinc-300"
                     }`}>
@@ -512,7 +512,7 @@ export default function SchedulePage() {
                           </div>
                         )}
                         <div
-                          className="h-[100px] border-b border-zinc-700/50 p-0.5"
+                          className="h-[70px] border-b border-zinc-700/50 p-0.5"
                           style={{ backgroundColor: `${colors.accent}18` }}
                         >
                           {band ? (
@@ -545,7 +545,7 @@ export default function SchedulePage() {
                             >
                               {/* Nombre */}
                               <div className="flex-1 min-h-0 flex items-center">
-                                <h3 className={`text-sm font-bold leading-tight line-clamp-2 text-center w-full ${
+                                <h3 className={`text-xs font-bold leading-tight line-clamp-2 text-center w-full ${
                                   isPast ? "text-zinc-500" : band.isAttending ? "text-white drop-shadow-md" : "text-zinc-400"
                                 }`}>
                                   {band.name}

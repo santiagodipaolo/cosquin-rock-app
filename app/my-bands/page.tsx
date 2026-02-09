@@ -153,7 +153,7 @@ export default function MyBandsPage() {
   const day2Count = bands.filter((b) => b.band.day === 2).length;
 
   return (
-    <div className="h-screen bg-zinc-950 flex flex-col overflow-hidden">
+    <div className="h-screen bg-zinc-950 flex flex-col overflow-hidden" style={{ height: '100dvh' }}>
       {/* Header */}
       <header className="bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800/50 flex-shrink-0 z-10">
         <div className="px-4 pt-3 pb-2">
@@ -198,7 +198,7 @@ export default function MyBandsPage() {
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              Viernes 14
+              Sabado 14
               {day1Count > 0 && (
                 <span className="ml-1.5 bg-white/20 px-1.5 py-0.5 rounded-full text-[10px]">{day1Count}</span>
               )}
@@ -211,7 +211,7 @@ export default function MyBandsPage() {
                   : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              Sabado 15
+              Domingo 15
               {day2Count > 0 && (
                 <span className="ml-1.5 bg-white/20 px-1.5 py-0.5 rounded-full text-[10px]">{day2Count}</span>
               )}

@@ -4,15 +4,11 @@ import { useEffect } from "react";
 
 export default function CacheManager() {
   useEffect(() => {
-    // Cachear automáticamente sin preguntar
-    const cached = localStorage.getItem("offlineCached");
-    if (!cached) {
-      // Cachear después de 3 segundos en segundo plano
-      const timer = setTimeout(() => {
-        cacheForOffline();
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
+    // Cachear automáticamente en cada visita para tener datos frescos offline
+    const timer = setTimeout(() => {
+      cacheForOffline();
+    }, 3000);
+    return () => clearTimeout(timer);
   }, []);
 
   const cacheForOffline = async () => {
@@ -33,8 +29,7 @@ export default function CacheManager() {
         )
       );
 
-      localStorage.setItem("offlineCached", "true");
-      console.log("[Cache] App cacheada para uso offline ✅");
+      console.log("[Cache] App cacheada para uso offline");
     } catch (error) {
       console.error("[Cache] Error caching:", error);
     }
