@@ -155,7 +155,7 @@ export default function LoginPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="santi, juani, martu..."
+                placeholder="Tu nombre de usuario"
                 autoComplete="off"
                 disabled={loading}
               />
@@ -237,6 +237,10 @@ export default function LoginPage() {
             ? "Olvidaste tu PIN? Pedile a un admin"
             : "Recordá tu PIN, lo vas a necesitar para entrar"}
         </p>
+
+        <div className="mt-8 text-center text-xs text-zinc-600">
+          <p>Hecho con <span className="text-red-500">♥</span> por <a href="https://x.com/santidipaolo" target="_blank" rel="noopener noreferrer" className="underline hover:text-zinc-400 transition-colors">Dipa</a></p>
+        </div>
       </motion.div>
     </main>
   );

@@ -196,7 +196,7 @@ export default function ProfilePage() {
           </motion.div>
 
           <div className="mt-8 text-center text-xs text-zinc-600">
-            <p>Hecho con amor por Dipa</p>
+            <p>Hecho con <span className="text-red-500">♥</span> por <a href="https://x.com/santidipaolo" target="_blank" rel="noopener noreferrer" className="underline hover:text-zinc-400 transition-colors">Dipa</a></p>
           </div>
         </div>
       </div>
