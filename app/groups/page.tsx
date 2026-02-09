@@ -254,16 +254,20 @@ export default function GroupsPage() {
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
   };
 
-  const copyInviteCode = (code: string) => {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyInviteCode = (code: string, groupId: string) => {
     navigator.clipboard.writeText(code);
-    alert(`Codigo copiado: ${code}`);
+    setCopiedId(`code-${groupId}`);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const copyGroupLink = (group: Group) => {
     const baseUrl = window.location.origin;
     const inviteUrl = `${baseUrl}/join/${group.inviteCode}`;
     navigator.clipboard.writeText(inviteUrl);
-    alert(`Link copiado al portapapeles!`);
+    setCopiedId(`link-${group.id}`);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const isAdmin = (group: Group) => group.createdBy === session?.user?.id;
@@ -613,10 +617,14 @@ export default function GroupsPage() {
                         </div>
                         {editingGroupId !== group.id && (
                           <button
-                            onClick={() => copyInviteCode(group.inviteCode)}
-                            className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-300 font-mono transition-colors text-xs flex-shrink-0"
+                            onClick={() => copyInviteCode(group.inviteCode, group.id)}
+                            className={`px-2.5 py-1 rounded-lg font-mono transition-all text-xs flex-shrink-0 ${
+                              copiedId === `code-${group.id}`
+                                ? "bg-emerald-600 text-white"
+                                : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                            }`}
                           >
-                            {group.inviteCode}
+                            {copiedId === `code-${group.id}` ? "Copiado!" : group.inviteCode}
                           </button>
                         )}
                       </div>
@@ -653,11 +661,21 @@ export default function GroupsPage() {
 
                         <button
                           onClick={() => copyGroupLink(group)}
-                          className="py-2 px-3 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-1.5"
+                          className={`py-2 px-3 rounded-lg font-medium transition-all text-sm flex items-center justify-center gap-1.5 ${
+                            copiedId === `link-${group.id}`
+                              ? "bg-emerald-600 text-white"
+                              : "bg-primary hover:bg-primary-dark text-white"
+                          }`}
                         >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
+                          {copiedId === `link-${group.id}` ? (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          )}
                         </button>
 
                         {/* Manage button */}
