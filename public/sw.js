@@ -1,5 +1,5 @@
-const CACHE_NAME = 'cosquin-rock-v2';
-const RUNTIME_CACHE = 'runtime-cache-v2';
+const CACHE_NAME = 'cosquin-rock-v3';
+const RUNTIME_CACHE = 'runtime-cache-v3';
 
 // Recursos para pre-cachear
 const PRE_CACHE_URLS = [
@@ -92,32 +92,42 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Estrategia para páginas y assets: Cache First con Network Fallback
+  // Estrategia para páginas: Network First con fallback a cache
+  // Esto asegura que los usuarios siempre vean la versión más reciente
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const responseClone = response.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match(request)
+            .then((cachedResponse) => cachedResponse || caches.match('/') || new Response('Offline'));
+        })
+    );
+    return;
+  }
+
+  // Estrategia para assets (JS, CSS, imágenes): Cache First con Network Fallback
   event.respondWith(
     caches.match(request)
       .then((cachedResponse) => {
         if (cachedResponse) {
-          // Retornar desde cache y actualizar en segundo plano
-          fetch(request)
-            .then((response) => {
-              if (response.ok) {
-                caches.open(RUNTIME_CACHE).then((cache) => {
-                  cache.put(request, response);
-                });
-              }
-            })
-            .catch(() => {});
           return cachedResponse;
         }
 
-        // Si no está en cache, fetch y cachear
         return fetch(request)
           .then((response) => {
             if (!response || response.status !== 200 || response.type === 'error') {
               return response;
             }
 
-            // Cachear la respuesta
             const responseClone = response.clone();
             caches.open(RUNTIME_CACHE).then((cache) => {
               cache.put(request, responseClone);
@@ -127,8 +137,7 @@ self.addEventListener('fetch', (event) => {
           })
           .catch((error) => {
             console.log('[SW] Fetch failed:', url.pathname, error);
-            // Retornar página offline básica si existe
-            return caches.match('/') || new Response('Offline');
+            return new Response('Offline');
           });
       })
   );
