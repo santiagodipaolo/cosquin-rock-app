@@ -99,7 +99,7 @@ const day2Norte = [
   { name: "Caras Extrañas", time: "00:20" },
   { name: "YSY A", time: "23:00" },
   { name: "Airbag", time: "20:55" },
-  { name: "Rto Paez", time: "19:10" },
+  { name: "Fito Paez", time: "19:10" },
   { name: "Bandidos Chinos", time: "17:50" },
   { name: "Gauchito Club", time: "16:30" },
   { name: "Blair", time: "15:20" },
