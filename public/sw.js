@@ -1,5 +1,5 @@
-const CACHE_NAME = 'cosquin-rock-v3';
-const RUNTIME_CACHE = 'runtime-cache-v3';
+const CACHE_NAME = 'cosquin-rock-v4';
+const RUNTIME_CACHE = 'runtime-cache-v4';
 
 // Recursos para pre-cachear
 const PRE_CACHE_URLS = [
