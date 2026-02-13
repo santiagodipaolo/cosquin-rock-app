@@ -20,11 +20,11 @@ function parseTime(day: number, timeStr: string): Date {
 const day1Norte = [
   { name: "Caligaris", time: "00:40" },
   { name: "Lali", time: "23:20" },
-  { name: "Babasonicos", time: "21:20" },
+  { name: "Babasónicos", time: "21:20" },
   { name: "Dillom", time: "19:30" },
   { name: "Turf", time: "17:50" },
   { name: "El Zar", time: "16:00" },
-  { name: "Cruca Sativa", time: "15:20" },
+  { name: "Eruca Sativa", time: "15:20" },
   { name: "Kill Flora", time: "14:30" },
 ];
 
@@ -34,9 +34,9 @@ const day1Sur = [
   { name: "La Vela Puerca", time: "21:40" },
   { name: "Ciro y Los Persas", time: "19:40" },
   { name: "Cruzando el Charco", time: "17:50" },
-  { name: "CNI", time: "16:30" },
+  { name: "Emi", time: "16:30" },
   { name: "La Mississippi", time: "15:20" },
-  { name: "Fantasmagoria", time: "14:30" },
+  { name: "Fantasmagoría", time: "14:30" },
 ];
 
 const day1Montana = [
@@ -45,10 +45,10 @@ const day1Montana = [
   { name: "Franz Ferdinand", time: "22:40" },
   { name: "Cuarteto de Nos", time: "20:40" },
   { name: "El Kuelgue", time: "18:40" },
-  { name: "Marlina Bertoldi", time: "17:10" },
+  { name: "Marilina Bertoldi", time: "17:10" },
   { name: "Bersuit Vergarabat", time: "15:50" },
-  { name: "Eyan", time: "15:00" },
-  { name: "Cheche de Marcos", time: "14:15" },
+  { name: "Ryan", time: "15:00" },
+  { name: "Chechi De Marcos", time: "14:15" },
 ];
 
 const day1BoomErang = [
@@ -73,7 +73,7 @@ const day1CasitaBlues = [
   { name: "Tango & Roll", time: "19:35" },
   { name: "Misty Soul Choir", time: "18:40" },
   { name: "Perro Suizo", time: "17:45" },
-  { name: "Lo Deacs", time: "16:50" },
+  { name: "Le Dracs", time: "16:50" },
   { name: "Las Witches", time: "15:55" },
   { name: "Los Mentidores", time: "15:05" },
   { name: "Golo's Band", time: "14:15" },
@@ -81,7 +81,7 @@ const day1CasitaBlues = [
 
 const day1PlazaElectronica = [
   { name: "Arkadyan", time: "22:30" },
-  { name: "Sora", time: "21:00" },
+  { name: "Sorä", time: "21:00" },
   { name: "Lehar B2B Santiago Garcia", time: "19:00" },
   { name: "Valentin Huedo B2B Bruz", time: "17:00" },
   { name: "Claudio Ricci", time: "16:00" },
@@ -90,7 +90,7 @@ const day1PlazaElectronica = [
 const day1Sorpresa = [
   { name: "Sorpresa", time: "22:20" },
   { name: "Sorpresa", time: "18:40" },
-  { name: "Falset", time: "15:50" },
+  { name: "Falsed", time: "15:50" },
 ];
 
 // ========== DÍA 2 - 15 DE FEBRERO ==========
@@ -100,10 +100,10 @@ const day2Norte = [
   { name: "YSY A", time: "23:00" },
   { name: "Airbag", time: "20:55" },
   { name: "Fito Paez", time: "19:10" },
-  { name: "Bandidos Chinos", time: "17:50" },
+  { name: "Bandalos Chinos", time: "17:50" },
   { name: "Gauchito Club", time: "16:30" },
   { name: "Blair", time: "15:20" },
-  { name: "Sor Mora", time: "14:30" },
+  { name: "Sofi Mora", time: "14:30" },
 ];
 
 const day2Sur = [
@@ -120,38 +120,38 @@ const day2Sur = [
 const day2Montana = [
   { name: "Franky Wah", time: "02:00" },
   { name: "Mariano Mellino", time: "00:00" },
-  { name: "Peces Raros", time: "22:20" },
   { name: "Las Pastillas del Abuelo", time: "22:20" },
+  { name: "Peces Raros", time: "00:00" },
   { name: "Morat", time: "20:20" },
   { name: "Silvestre y la Naranja", time: "18:30" },
   { name: "Los Pericos", time: "17:00" },
   { name: "Gustavo Cordera", time: "15:50" },
   { name: "Beats Modernos", time: "15:00" },
-  { name: "Renzo Leau", time: "14:30" },
+  { name: "Renzo Leali", time: "14:30" },
 ];
 
 const day2Paraguay = [
   { name: "El Club de la Serpiente", time: "00:45" },
   { name: "Six Sex", time: "23:35" },
   { name: "CTM", time: "22:35" },
-  { name: "David Clifton", time: "21:35" },
+  { name: "David Ellefson", time: "21:35" },
   { name: "Marky Ramone", time: "20:30" },
   { name: "Dum Chica", time: "19:30" },
   { name: "Devendra Banhart", time: "18:20" },
   { name: "Gauchos of the Pampa", time: "17:20" },
   { name: "Malandro", time: "16:10" },
-  { name: "TGK", time: "15:10" },
-  { name: "Wanda Jagl", time: "14:20" },
+  { name: "T&K", time: "15:10" },
+  { name: "Wanda Jael", time: "14:20" },
 ];
 
 const day2CasitaBlues = [
-  { name: "Lorcita Sordillo", time: "23:35" },
-  { name: "Ximè Monzon", time: "22:40" },
+  { name: "Loretta Sorbello", time: "23:35" },
+  { name: "Xime Monzón", time: "22:40" },
   { name: "Nina Portela", time: "21:45" },
   { name: "Crystal Thomas & Luca Giordano", time: "20:40" },
-  { name: "Gisa Loredro & Tuco y Cosas", time: "19:35" },
+  { name: "Gisa Londero & Toyo Bagoso", time: "19:35" },
   { name: "Grasshopper's", time: "18:40" },
-  { name: "Cordelias Blues", time: "17:45" },
+  { name: "Cordelia's Blues", time: "17:45" },
   { name: "Bulldozer Blues Band", time: "16:50" },
   { name: "Rudy", time: "15:55" },
   { name: "Labios de Sal", time: "15:05" },
@@ -159,8 +159,8 @@ const day2CasitaBlues = [
 ];
 
 const day2PlazaElectronica = [
-  { name: "Matias Tanzmann", time: "00:00" },
-  { name: "Nölsch", time: "22:30" },
+  { name: "Matías Tanzmann", time: "00:00" },
+  { name: "Kölsch", time: "22:30" },
   { name: "Franky Wah", time: "21:00" },
   { name: "Deer Jade", time: "19:30" },
   { name: "Brigado Crew", time: "18:00" },
