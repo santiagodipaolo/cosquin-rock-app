@@ -23,7 +23,7 @@ const day1Norte = [
   { name: "Babasónicos", time: "21:20" },
   { name: "Dillom", time: "19:30" },
   { name: "Turf", time: "17:50" },
-  { name: "El Zar", time: "16:00" },
+  { name: "El Zar", time: "16:30" },
   { name: "Eruca Sativa", time: "15:20" },
   { name: "Kill Flora", time: "14:30" },
 ];
@@ -58,17 +58,17 @@ const day1BoomErang = [
   { name: "Abel Pintos", time: "20:40" },
   { name: "Estelares", time: "19:20" },
   { name: "Indios", time: "18:20" },
-  { name: "Hermanos Gutierrez", time: "17:20" },
+  { name: "Hermanos Gutiérrez", time: "17:20" },
   { name: "Girl Ultra", time: "16:30" },
-  { name: "Un Muerto Mas", time: "15:40" },
+  { name: "Un Muerto Más", time: "15:40" },
   { name: "1915", time: "14:50" },
   { name: "Microtul", time: "14:10" },
 ];
 
 const day1CasitaBlues = [
   { name: "Les Diabolettes", time: "23:35" },
-  { name: "Piti Fernandez", time: "22:30" },
-  { name: "Los Espiritus", time: "21:25" },
+  { name: "Piti Fernández", time: "22:30" },
+  { name: "Los Espíritus", time: "21:25" },
   { name: "Wayra Iglesias", time: "20:30" },
   { name: "Tango & Roll", time: "19:35" },
   { name: "Misty Soul Choir", time: "18:40" },
@@ -82,8 +82,8 @@ const day1CasitaBlues = [
 const day1PlazaElectronica = [
   { name: "Arkadyan", time: "22:30" },
   { name: "Sorä", time: "21:00" },
-  { name: "Lehar B2B Santiago Garcia", time: "19:00" },
-  { name: "Valentin Huedo B2B Bruz", time: "17:00" },
+  { name: "Lehar B2B Santiago García", time: "19:00" },
+  { name: "Valentín Huedo B2B Bruz", time: "17:00" },
   { name: "Claudio Ricci", time: "16:00" },
 ];
 
@@ -99,7 +99,7 @@ const day2Norte = [
   { name: "Caras Extrañas", time: "00:20" },
   { name: "YSY A", time: "23:00" },
   { name: "Airbag", time: "20:55" },
-  { name: "Fito Paez", time: "19:10" },
+  { name: "Fito Páez", time: "19:10" },
   { name: "Bandalos Chinos", time: "17:50" },
   { name: "Gauchito Club", time: "16:30" },
   { name: "Blair", time: "15:20" },
@@ -108,20 +108,20 @@ const day2Norte = [
 
 const day2Sur = [
   { name: "Louta", time: "00:50" },
-  { name: "Guasones", time: "23:00" },
+  { name: "Guasones", time: "23:10" },
   { name: "Trueno", time: "21:30" },
   { name: "Divididos", time: "19:40" },
   { name: "El Plan de la Mariposa", time: "17:45" },
   { name: "Pappo x Juanse", time: "16:25" },
   { name: "Kapanga", time: "15:10" },
-  { name: "Ainda", time: "14:30" },
+  { name: "Ainda", time: "14:20" },
 ];
 
 const day2Montana = [
   { name: "Franky Wah", time: "02:00" },
-  { name: "Mariano Mellino", time: "00:00" },
-  { name: "Las Pastillas del Abuelo", time: "22:20" },
+  { name: "Mariano Mellino", time: "01:00" },
   { name: "Peces Raros", time: "00:00" },
+  { name: "Las Pastillas del Abuelo", time: "22:20" },
   { name: "Morat", time: "20:20" },
   { name: "Silvestre y la Naranja", time: "18:30" },
   { name: "Los Pericos", time: "17:00" },
