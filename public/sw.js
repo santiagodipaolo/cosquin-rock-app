@@ -1,5 +1,5 @@
-const CACHE_NAME = 'cosquin-rock-v5';
-const RUNTIME_CACHE = 'runtime-cache-v5';
+const CACHE_NAME = 'cosquin-rock-v6';
+const RUNTIME_CACHE = 'runtime-cache-v6';
 
 // Recursos para pre-cachear
 const PRE_CACHE_URLS = [
@@ -25,7 +25,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activación - Limpiar caches viejos
+// Activación - Limpiar caches viejos y forzar recarga
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activating service worker...');
   event.waitUntil(
@@ -38,7 +38,14 @@ self.addEventListener('activate', (event) => {
             return caches.delete(name);
           })
       );
-    }).then(() => self.clients.claim())
+    })
+    .then(() => self.clients.claim())
+    .then(() => self.clients.matchAll({ type: 'window' }))
+    .then((windowClients) => {
+      windowClients.forEach((client) => {
+        client.navigate(client.url);
+      });
+    })
   );
 });
 
