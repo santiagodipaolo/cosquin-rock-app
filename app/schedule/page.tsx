@@ -47,6 +47,7 @@ export default function SchedulePage() {
   const bandRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [pendingNotifications, setPendingNotifications] = useState(0);
+  const [selectedBand, setSelectedBand] = useState<Band | null>(null);
 
   const stages =
     selectedDay === 1
@@ -524,7 +525,7 @@ export default function SchedulePage() {
                                 if (el) bandRefs.current[`${band.stage}-${band.id}`] = el;
                               }}
                               whileTap={{ scale: 0.96 }}
-                              onClick={() => toggleAttendance(band.id, band.isAttending || false)}
+                              onClick={() => setSelectedBand(band)}
                               className={`h-full rounded-xl cursor-pointer flex flex-col justify-center relative overflow-hidden transition-all duration-200 ${
                                 isPast
                                   ? "opacity-50"
@@ -555,41 +556,15 @@ export default function SchedulePage() {
                                 </h3>
                               </div>
 
-                              {/* Amigos que van - siempre visible */}
+                              {/* Indicador de amigos */}
                               {band.friendsInfo && band.friendsInfo.length > 0 && (
-                                <div className="flex flex-wrap gap-0.5 mt-1 justify-center">
-                                  {band.friendsInfo.slice(0, 3).map((friend) => (
-                                    <span
-                                      key={friend.username}
-                                      className={`text-[8px] px-1 py-0 rounded-full font-semibold ${
-                                        isPast
-                                          ? "bg-zinc-800 text-zinc-500"
-                                          : band.isAttending
-                                          ? friend.source === "friend"
-                                            ? "bg-primary/30 text-white"
-                                            : "bg-white/25 text-white"
-                                          : friend.source === "friend"
-                                          ? "bg-primary/15 text-primary-light"
-                                          : "bg-zinc-800/80 text-zinc-400"
-                                      }`}
-                                      style={
-                                        !isPast && friend.source === "friend" && !band.isAttending
-                                          ? { borderBottom: "1px dashed rgba(255,107,53,0.4)" }
-                                          : undefined
-                                      }
-                                    >
-                                      {friend.username}
-                                    </span>
-                                  ))}
-                                  {band.friendsInfo.length > 3 && (
-                                    <span className={`text-[8px] px-1 rounded-full font-semibold ${
-                                      isPast
-                                        ? "bg-zinc-800 text-zinc-500"
-                                        : band.isAttending ? "bg-white/25 text-white" : "bg-zinc-800/80 text-zinc-400"
-                                    }`}>
-                                      +{band.friendsInfo.length - 3}
-                                    </span>
-                                  )}
+                                <div className="flex items-center justify-center gap-1 mt-0.5">
+                                  <svg className={`w-2.5 h-2.5 ${isPast ? "text-zinc-600" : band.isAttending ? "text-white/70" : "text-zinc-500"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                                  </svg>
+                                  <span className={`text-[9px] font-bold ${isPast ? "text-zinc-600" : band.isAttending ? "text-white/70" : "text-zinc-500"}`}>
+                                    {band.friendsInfo.length}
+                                  </span>
                                 </div>
                               )}
 
@@ -644,6 +619,101 @@ export default function SchedulePage() {
           </button>
         </div>
       </nav>
+
+      {/* Band Detail Modal */}
+      <AnimatePresence>
+        {selectedBand && (() => {
+          const colors = stageColors[selectedBand.stage];
+          const time = new Date(selectedBand.startTime).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+          const isPast = isBandPast(selectedBand);
+          return (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/60 z-40"
+                onClick={() => setSelectedBand(null)}
+              />
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-900 rounded-t-2xl border-t border-zinc-700/50 max-h-[70vh] overflow-y-auto"
+                style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+              >
+                {/* Handle bar */}
+                <div className="flex justify-center pt-3 pb-2">
+                  <div className="w-10 h-1 bg-zinc-700 rounded-full" />
+                </div>
+
+                <div className="px-5 pb-4">
+                  {/* Stage badge + time */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className="text-[11px] px-2 py-0.5 rounded-full font-semibold text-white"
+                      style={{ backgroundColor: colors.accent }}
+                    >
+                      {stageName[selectedBand.stage]}
+                    </span>
+                    <span className="text-sm text-zinc-400">{time} hs</span>
+                  </div>
+
+                  {/* Band name */}
+                  <h2 className="text-xl font-bold text-white mb-4">{selectedBand.name}</h2>
+
+                  {/* Attendance toggle */}
+                  <button
+                    onClick={() => {
+                      toggleAttendance(selectedBand.id, selectedBand.isAttending || false);
+                      setSelectedBand({
+                        ...selectedBand,
+                        isAttending: !selectedBand.isAttending,
+                      });
+                    }}
+                    className={`w-full py-3 rounded-xl font-bold text-sm transition-all duration-200 mb-4 ${
+                      selectedBand.isAttending
+                        ? "bg-zinc-800 text-zinc-300 border border-zinc-700"
+                        : "text-white shadow-lg"
+                    }`}
+                    style={
+                      !selectedBand.isAttending
+                        ? { backgroundColor: colors.accent }
+                        : undefined
+                    }
+                  >
+                    {selectedBand.isAttending ? "No voy" : "Voy!"}
+                  </button>
+
+                  {/* Friends list */}
+                  {selectedBand.friendsInfo && selectedBand.friendsInfo.length > 0 && (
+                    <div>
+                      <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+                        Amigos que van ({selectedBand.friendsInfo.length})
+                      </h3>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedBand.friendsInfo.map((friend) => (
+                          <span
+                            key={friend.username}
+                            className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+                              friend.source === "friend"
+                                ? "bg-primary/20 text-primary-light border border-primary/30"
+                                : "bg-zinc-800 text-zinc-300 border border-zinc-700"
+                            }`}
+                          >
+                            @{friend.username}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </>
+          );
+        })()}
+      </AnimatePresence>
     </div>
   );
 }
