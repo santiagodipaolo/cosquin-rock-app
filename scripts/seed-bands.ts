@@ -29,7 +29,7 @@ const day1Norte = [
 ];
 
 const day1Sur = [
-  { name: "Viejas Locas / Jovenes Pordioseros", time: "00:40" },
+  { name: "Viejas Locas / Jóvenes Pordioseros", time: "00:40" },
   { name: "Las Pelotas", time: "23:20" },
   { name: "La Vela Puerca", time: "21:40" },
   { name: "Ciro y Los Persas", time: "19:40" },
@@ -155,7 +155,7 @@ const day2CasitaBlues = [
   { name: "Bulldozer Blues Band", time: "16:50" },
   { name: "Rudy", time: "15:55" },
   { name: "Labios de Sal", time: "15:05" },
-  { name: "Rosy Gomez", time: "14:15" },
+  { name: "Rosy Gomeez", time: "14:15" },
 ];
 
 const day2PlazaElectronica = [
