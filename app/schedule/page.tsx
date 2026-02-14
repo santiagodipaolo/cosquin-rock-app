@@ -48,9 +48,7 @@ export default function SchedulePage() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [pendingNotifications, setPendingNotifications] = useState(0);
   const [selectedBand, setSelectedBand] = useState<Band | null>(null);
-  const [gridScale, setGridScale] = useState(1);
-  const gridScaleRef = useRef(1);
-  const zoomOut = gridScale < 0.7;
+  const [zoomOut, setZoomOut] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
 
   const stages =
@@ -96,16 +94,13 @@ export default function SchedulePage() {
     }
   }, [loading, selectedDay]);
 
-  // Sync gridScale ref
-  useEffect(() => { gridScaleRef.current = gridScale; }, [gridScale]);
-
-  // Pinch-to-zoom on the grid
+  // Pinch-to-zoom toggles compact mode
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
 
     let startDist = 0;
-    let startScale = 1;
+    let didToggle = false;
 
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
@@ -113,27 +108,32 @@ export default function SchedulePage() {
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
         );
-        startScale = gridScaleRef.current;
+        didToggle = false;
       }
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 2 && startDist > 0) {
+      if (e.touches.length === 2 && startDist > 0 && !didToggle) {
         e.preventDefault();
         const dist = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
         );
-        const newScale = startScale * (dist / startDist);
-        const clamped = Math.min(1, Math.max(0.35, newScale));
-        gridScaleRef.current = clamped;
-        setGridScale(clamped);
+        const ratio = dist / startDist;
+        if (ratio < 0.65) {
+          setZoomOut(true);
+          didToggle = true;
+        } else if (ratio > 1.5) {
+          setZoomOut(false);
+          didToggle = true;
+        }
       }
     };
 
     const onTouchEnd = (e: TouchEvent) => {
-      if (startDist > 0 && e.touches.length < 2) {
+      if (e.touches.length < 2) {
         startDist = 0;
+        didToggle = false;
       }
     };
 
@@ -477,12 +477,7 @@ export default function SchedulePage() {
           <div className="flex gap-1.5 mt-3 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4">
             <button
               onClick={() => {
-                if (zoomOut) {
-                  setGridScale(1);
-                } else {
-                  const fitScale = (window.innerWidth - 16) / (stages.length * 120 + 56);
-                  setGridScale(Math.max(0.35, Math.min(0.65, fitScale)));
-                }
+                setZoomOut(!zoomOut);
                 setActiveStageFilter(null);
               }}
               className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 flex items-center gap-1 ${
@@ -497,7 +492,7 @@ export default function SchedulePage() {
               {zoomOut ? "Zoom +" : "Zoom -"}
             </button>
             <button
-              onClick={() => { setActiveStageFilter(null); setGridScale(1); }}
+              onClick={() => { setActiveStageFilter(null); setZoomOut(false); }}
               className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
                 activeStageFilter === null && !zoomOut
                   ? "bg-white text-zinc-900"
@@ -511,7 +506,7 @@ export default function SchedulePage() {
               return (
                 <button
                   key={stage}
-                  onClick={() => { setActiveStageFilter(activeStageFilter === stage ? null : stage); setGridScale(1); }}
+                  onClick={() => { setActiveStageFilter(activeStageFilter === stage ? null : stage); setZoomOut(false); }}
                   className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
                     activeStageFilter === stage
                       ? `text-white shadow-lg ${colors.glow} border-2 border-white/30 ring-2`
@@ -532,18 +527,18 @@ export default function SchedulePage() {
       </header>
 
       {/* Grid */}
-      <div ref={scrollRef} className="flex-1 min-h-0 pb-16 overflow-auto">
+      <div ref={scrollRef} className={`flex-1 min-h-0 pb-16 ${zoomOut ? 'overflow-y-auto overflow-x-hidden' : 'overflow-auto'}`}>
         {loading ? (
           <div className="p-6 flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             <span className="text-zinc-400 text-sm">Cargando grilla...</span>
           </div>
         ) : (
-          <div className="flex min-w-full" style={{ zoom: gridScale }}>
+          <div className={`flex ${zoomOut ? 'w-full' : 'min-w-full'}`}>
             {/* Columna de horarios */}
-            <div className="sticky left-0 z-10 flex-shrink-0 bg-zinc-950 w-14">
-              <div className="h-10 border-b border-zinc-800/50 flex items-center justify-center sticky top-0 z-20 bg-zinc-950">
-                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Hora</span>
+            <div className={`${zoomOut ? '' : 'sticky left-0'} z-10 flex-shrink-0 bg-zinc-950 ${zoomOut ? 'w-9' : 'w-14'}`}>
+              <div className={`${zoomOut ? 'h-7' : 'h-10'} border-b border-zinc-800/50 flex items-center justify-center sticky top-0 z-20 bg-zinc-950`}>
+                <span className={`${zoomOut ? 'text-[7px]' : 'text-[9px]'} font-bold text-zinc-500 uppercase tracking-widest`}>Hora</span>
               </div>
               {timeSlots.map((slot, i) => (
                 <div key={slot.time} className="relative">
@@ -555,8 +550,8 @@ export default function SchedulePage() {
                       </div>
                     </div>
                   )}
-                  <div className="h-[56px] border-b border-zinc-700/50 flex items-center justify-center bg-zinc-950">
-                    <span className={`text-xs font-bold tabular-nums ${
+                  <div className={`${zoomOut ? 'h-[44px]' : 'h-[56px]'} border-b border-zinc-700/50 flex items-center justify-center bg-zinc-950`}>
+                    <span className={`${zoomOut ? 'text-[8px]' : 'text-xs'} font-bold tabular-nums ${
                       timeLinePosition !== -1 && i < timeLinePosition ? "text-zinc-600" : "text-zinc-300"
                     }`}>
                       {slot.time}
@@ -572,11 +567,11 @@ export default function SchedulePage() {
               return (
                 <div
                   key={stage}
-                  className="flex-1 border-r border-zinc-700/40 min-w-[120px]"
+                  className={`flex-1 border-r border-zinc-700/40 ${zoomOut ? 'min-w-0 overflow-hidden' : 'min-w-[120px]'}`}
                 >
                   {/* Header del escenario */}
-                  <div className={`h-10 border-b border-zinc-800/50 flex items-center justify-center px-0.5 bg-gradient-to-r ${colors.gradient} sticky top-0 z-10`}>
-                    <span className="text-[10px] font-bold text-white text-center drop-shadow-sm leading-tight">{stageName[stage]}</span>
+                  <div className={`${zoomOut ? 'h-7' : 'h-10'} border-b border-zinc-800/50 flex items-center justify-center px-0.5 bg-gradient-to-r ${colors.gradient} sticky top-0 z-10 overflow-hidden`}>
+                    <span className={`${zoomOut ? 'text-[7px] truncate px-px' : 'text-[10px]'} font-bold text-white text-center drop-shadow-sm leading-tight`}>{stageName[stage]}</span>
                   </div>
 
                   {/* Bandas */}
@@ -593,7 +588,7 @@ export default function SchedulePage() {
                           </div>
                         )}
                         <div
-                          className="h-[56px] border-b border-zinc-700/50 p-0.5"
+                          className={`${zoomOut ? 'h-[44px]' : 'h-[56px]'} border-b border-zinc-700/50 p-0.5`}
                           style={{ backgroundColor: `${colors.accent}18` }}
                         >
                           {band ? (
@@ -603,7 +598,7 @@ export default function SchedulePage() {
                               }}
                               whileTap={{ scale: 0.96 }}
                               onClick={() => setSelectedBand(band)}
-                              className={`h-full rounded-xl cursor-pointer flex flex-col justify-center relative overflow-hidden transition-all duration-200 ${
+                              className={`h-full ${zoomOut ? 'rounded-md' : 'rounded-xl'} cursor-pointer flex flex-col justify-center relative overflow-hidden transition-all duration-200 ${
                                 isPast
                                   ? "opacity-50"
                                   : band.isAttending
@@ -613,7 +608,7 @@ export default function SchedulePage() {
                                   : "opacity-60"
                               }`}
                               style={{
-                                padding: "5px 7px",
+                                padding: zoomOut ? "2px 3px" : "5px 7px",
                                 ...(isPast
                                   ? { backgroundColor: `${colors.accent}10`, border: `1px solid ${colors.accent}15` }
                                   : band.isAttending
@@ -626,7 +621,7 @@ export default function SchedulePage() {
                             >
                               {/* Nombre */}
                               <div className="flex-1 min-h-0 flex items-center">
-                                <h3 className={`text-xs font-bold leading-tight line-clamp-2 text-center w-full ${
+                                <h3 className={`${zoomOut ? 'text-[8px]' : 'text-xs'} font-bold leading-tight line-clamp-2 text-center w-full ${
                                   isPast ? "text-zinc-500" : band.isAttending ? "text-white drop-shadow-md" : "text-zinc-400"
                                 }`}>
                                   {band.name}
@@ -635,11 +630,11 @@ export default function SchedulePage() {
 
                               {/* Indicador de amigos */}
                               {band.friendsInfo && band.friendsInfo.length > 0 && (
-                                <div className="flex items-center justify-center gap-1 mt-0.5">
-                                  <svg className={`w-2.5 h-2.5 ${isPast ? "text-zinc-600" : band.isAttending ? "text-white/70" : "text-zinc-500"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <div className="flex items-center justify-center gap-0.5 mt-0.5">
+                                  <svg className={`${zoomOut ? 'w-2 h-2' : 'w-2.5 h-2.5'} ${isPast ? "text-zinc-600" : band.isAttending ? "text-white/70" : "text-zinc-500"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
                                   </svg>
-                                  <span className={`text-[9px] font-bold ${isPast ? "text-zinc-600" : band.isAttending ? "text-white/70" : "text-zinc-500"}`}>
+                                  <span className={`${zoomOut ? 'text-[7px]' : 'text-[9px]'} font-bold ${isPast ? "text-zinc-600" : band.isAttending ? "text-white/70" : "text-zinc-500"}`}>
                                     {band.friendsInfo.length}
                                   </span>
                                 </div>
