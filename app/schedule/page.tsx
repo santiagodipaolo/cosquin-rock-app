@@ -476,9 +476,9 @@ export default function SchedulePage() {
             <span className="text-zinc-400 text-sm">Cargando grilla...</span>
           </div>
         ) : (
-          <div className="flex min-w-full">
+          <div className={`flex ${zoomOut ? 'w-full' : 'min-w-full'}`}>
             {/* Columna de horarios */}
-            <div className={`${zoomOut ? '' : 'sticky left-0'} z-10 flex-shrink-0 bg-zinc-950 ${zoomOut ? 'w-10' : 'w-14'}`}>
+            <div className={`${zoomOut ? '' : 'sticky left-0'} z-10 flex-shrink-0 bg-zinc-950 ${zoomOut ? 'w-8' : 'w-14'}`}>
               <div className={`${zoomOut ? 'h-8' : 'h-10'} border-b border-zinc-800/50 flex items-center justify-center sticky top-0 z-20 bg-zinc-950`}>
                 <span className={`${zoomOut ? 'text-[7px]' : 'text-[9px]'} font-bold text-zinc-500 uppercase tracking-widest`}>Hora</span>
               </div>
@@ -493,7 +493,7 @@ export default function SchedulePage() {
                     </div>
                   )}
                   <div className={`${zoomOut ? 'h-[40px]' : 'h-[56px]'} border-b border-zinc-700/50 flex items-center justify-center bg-zinc-950`}>
-                    <span className={`${zoomOut ? 'text-[8px]' : 'text-xs'} font-bold tabular-nums ${
+                    <span className={`${zoomOut ? 'text-[7px]' : 'text-xs'} font-bold tabular-nums ${
                       timeLinePosition !== -1 && i < timeLinePosition ? "text-zinc-600" : "text-zinc-300"
                     }`}>
                       {slot.time}
@@ -509,11 +509,11 @@ export default function SchedulePage() {
               return (
                 <div
                   key={stage}
-                  className={`flex-1 border-r border-zinc-700/40 ${zoomOut ? 'min-w-0' : 'min-w-[120px]'}`}
+                  className={`flex-1 border-r border-zinc-700/40 ${zoomOut ? 'min-w-0 overflow-hidden' : 'min-w-[120px]'}`}
                 >
                   {/* Header del escenario */}
-                  <div className={`${zoomOut ? 'h-8' : 'h-10'} border-b border-zinc-800/50 flex items-center justify-center px-0.5 bg-gradient-to-r ${colors.gradient} sticky top-0 z-10`}>
-                    <span className={`${zoomOut ? 'text-[7px]' : 'text-[10px]'} font-bold text-white text-center drop-shadow-sm leading-tight`}>{stageName[stage]}</span>
+                  <div className={`${zoomOut ? 'h-8 overflow-hidden' : 'h-10'} border-b border-zinc-800/50 flex items-center justify-center px-0.5 bg-gradient-to-r ${colors.gradient} sticky top-0 z-10`}>
+                    <span className={`${zoomOut ? 'text-[6px] truncate max-w-full px-px' : 'text-[10px]'} font-bold text-white text-center drop-shadow-sm leading-tight`}>{stageName[stage]}</span>
                   </div>
 
                   {/* Bandas */}
@@ -563,7 +563,7 @@ export default function SchedulePage() {
                             >
                               {/* Nombre */}
                               <div className="flex-1 min-h-0 flex items-center">
-                                <h3 className={`${zoomOut ? 'text-[7px]' : 'text-xs'} font-bold leading-tight ${zoomOut ? 'line-clamp-2' : 'line-clamp-2'} text-center w-full ${
+                                <h3 className={`${zoomOut ? 'text-[6px]' : 'text-xs'} font-bold leading-tight line-clamp-2 text-center w-full ${
                                   isPast ? "text-zinc-500" : band.isAttending ? "text-white drop-shadow-md" : "text-zinc-400"
                                 }`}>
                                   {band.name}
