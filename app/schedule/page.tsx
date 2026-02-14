@@ -712,7 +712,7 @@ export default function SchedulePage() {
                             key={friend.username}
                             className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
                               friend.source === "friend"
-                                ? "bg-primary/20 text-primary-light border border-primary/30"
+                                ? "bg-primary/25 text-primary border border-primary/40"
                                 : "bg-zinc-800 text-zinc-300 border border-zinc-700"
                             }`}
                           >
