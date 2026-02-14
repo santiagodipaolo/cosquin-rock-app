@@ -567,7 +567,7 @@ export default function SchedulePage() {
               return (
                 <div
                   key={stage}
-                  className={`flex-1 border-r border-zinc-700/40 ${zoomOut ? 'min-w-0 overflow-hidden' : 'min-w-[120px]'}`}
+                  className={`flex-1 border-r border-zinc-700/40 ${zoomOut ? 'min-w-0' : 'min-w-[120px]'}`}
                 >
                   {/* Header del escenario */}
                   <div className={`${zoomOut ? 'h-7' : 'h-10'} border-b border-zinc-800/50 flex items-center justify-center px-0.5 bg-gradient-to-r ${colors.gradient} sticky top-0 z-10 overflow-hidden`}>
