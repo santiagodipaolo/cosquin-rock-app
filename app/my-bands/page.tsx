@@ -112,6 +112,8 @@ export default function MyBandsPage() {
   };
 
   const [linkCopied, setLinkCopied] = useState(false);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const handleShare = async () => {
     setSharing(true);
@@ -134,6 +136,219 @@ export default function MyBandsPage() {
     }
   };
 
+  const generateAgendaImage = async (dayFilter: 1 | 2 | "both") => {
+    const filteredBands = bands
+      .filter((b) => dayFilter === "both" || b.band.day === dayFilter)
+      .sort((a, b) => {
+        if (a.band.day !== b.band.day) return a.band.day - b.band.day;
+        return new Date(a.band.startTime).getTime() - new Date(b.band.startTime).getTime();
+      });
+
+    if (filteredBands.length === 0) return;
+
+    const W = 1080;
+    const PX = 80;
+    const days: number[] = dayFilter === "both" ? [1, 2] : [dayFilter as number];
+
+    const fmtTime = (b: MyBand) =>
+      new Date(b.band.startTime).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+
+    // Layout constants
+    const TOP_PAD = 60;
+    const LOGO_H = 140;
+    const TITLE_GAP = 35;
+    const TITLE_H = 42;
+    const SUB_GAP = 15;
+    const SUB_H = 26;
+    const DIV_GAP = 40;
+    const DIV_H = 2;
+    const AFTER_DIV = 25;
+    const DAY_HDR = 70;
+    const TIME_HDR = 55;
+    const BAND_H = 55;
+    const DAY_SEP = 25;
+    const FOOTER = 80;
+    const BOT_PAD = 50;
+
+    // Calculate height
+    let h = TOP_PAD + LOGO_H + TITLE_GAP + TITLE_H + SUB_GAP + SUB_H + DIV_GAP + DIV_H + AFTER_DIV;
+    for (const day of days) {
+      const db = filteredBands.filter((b) => b.band.day === day);
+      if (db.length === 0) continue;
+      if (dayFilter === "both") h += DAY_HDR;
+      let lt = "";
+      for (const band of db) {
+        const t = fmtTime(band);
+        if (t !== lt) { h += TIME_HDR; lt = t; }
+        h += BAND_H;
+      }
+      if (dayFilter === "both") h += DAY_SEP;
+    }
+    h += FOOTER + BOT_PAD;
+
+    // Create canvas
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d")!;
+
+    // Background
+    ctx.fillStyle = "#09090b";
+    ctx.fillRect(0, 0, W, h);
+    const glow = ctx.createRadialGradient(W / 2, 0, 0, W / 2, 0, 500);
+    glow.addColorStop(0, "rgba(255,107,53,0.05)");
+    glow.addColorStop(1, "transparent");
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, 500);
+
+    // Logo
+    let y = TOP_PAD;
+    try {
+      const logo = new Image();
+      logo.src = "/CR2026.png";
+      await new Promise<void>((res, rej) => { logo.onload = () => res(); logo.onerror = () => rej(); });
+      const lw = LOGO_H * (logo.width / logo.height);
+      ctx.drawImage(logo, (W - lw) / 2, y, lw, LOGO_H);
+    } catch { /* skip logo */ }
+    y += LOGO_H + TITLE_GAP;
+
+    // Title
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `bold ${TITLE_H}px Inter, system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillText("MI AGENDA", W / 2, y + TITLE_H * 0.8);
+    y += TITLE_H + SUB_GAP;
+
+    // Subtitle
+    const sub = dayFilter === 1 ? "Sábado 14 de Febrero" : dayFilter === 2 ? "Domingo 15 de Febrero" : "Sábado 14 & Domingo 15 de Febrero";
+    ctx.fillStyle = "#a1a1aa";
+    ctx.font = `500 ${SUB_H}px Inter, system-ui, sans-serif`;
+    ctx.fillText(sub, W / 2, y + SUB_H * 0.8);
+    y += SUB_H + DIV_GAP;
+
+    // Divider
+    const dg = ctx.createLinearGradient(PX, 0, W - PX, 0);
+    dg.addColorStop(0, "transparent");
+    dg.addColorStop(0.3, "rgba(255,107,53,0.35)");
+    dg.addColorStop(0.5, "#FF6B35");
+    dg.addColorStop(0.7, "rgba(255,107,53,0.35)");
+    dg.addColorStop(1, "transparent");
+    ctx.fillStyle = dg;
+    ctx.fillRect(PX, y, W - PX * 2, DIV_H);
+    y += DIV_H + AFTER_DIV;
+
+    // Bands
+    ctx.textAlign = "left";
+    for (const day of days) {
+      const dayBands = filteredBands.filter((b) => b.band.day === day);
+      if (dayBands.length === 0) continue;
+      if (dayFilter === "both") {
+        const label = day === 1 ? "SÁBADO 14" : "DOMINGO 15";
+        ctx.font = "bold 30px Inter, system-ui, sans-serif";
+        const lw = ctx.measureText(label).width;
+        const lineW = (W - PX * 2 - lw - 40) / 2;
+        const ly = y + 22;
+        ctx.fillStyle = "rgba(255,107,53,0.25)";
+        ctx.fillRect(PX, ly, lineW, 1);
+        ctx.fillRect(W - PX - lineW, ly, lineW, 1);
+        ctx.fillStyle = "#FF6B35";
+        ctx.textAlign = "center";
+        ctx.fillText(label, W / 2, y + 28);
+        ctx.textAlign = "left";
+        y += DAY_HDR;
+      }
+      let lastTime = "";
+      for (const band of dayBands) {
+        const cl = stageColors[band.band.stage] || stageColors.NORTE;
+        const time = fmtTime(band);
+        if (time !== lastTime) {
+          ctx.fillStyle = "#e4e4e7";
+          ctx.font = "bold 26px Inter, system-ui, sans-serif";
+          ctx.fillText(time, PX, y + 24);
+          const tw = ctx.measureText(time).width;
+          ctx.fillStyle = "#27272a";
+          ctx.fillRect(PX + tw + 15, y + 16, W - PX * 2 - tw - 15, 1);
+          y += TIME_HDR;
+          lastTime = time;
+        }
+        // Stage color dot
+        ctx.beginPath();
+        ctx.arc(PX + 12, y + 22, 7, 0, Math.PI * 2);
+        ctx.fillStyle = cl.accent;
+        ctx.fill();
+        // Stage name width for truncation calc
+        const sn = stageName[band.band.stage] || band.band.stage;
+        ctx.font = "500 18px Inter, system-ui, sans-serif";
+        const sw = ctx.measureText(sn).width;
+        // Band name
+        ctx.font = "600 24px Inter, system-ui, sans-serif";
+        const maxW = W - PX * 2 - 35 - sw - 20;
+        let name = band.band.name;
+        if (ctx.measureText(name).width > maxW) {
+          while (name.length > 0 && ctx.measureText(name + "\u2026").width > maxW) name = name.slice(0, -1);
+          name += "\u2026";
+        }
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(name, PX + 35, y + 28);
+        // Stage name right-aligned
+        ctx.fillStyle = cl.accent;
+        ctx.font = "500 18px Inter, system-ui, sans-serif";
+        ctx.textAlign = "right";
+        ctx.fillText(sn, W - PX, y + 26);
+        ctx.textAlign = "left";
+        y += BAND_H;
+      }
+      if (dayFilter === "both") y += DAY_SEP;
+    }
+
+    // Footer
+    y += 10;
+    const fg = ctx.createLinearGradient(PX, 0, W - PX, 0);
+    fg.addColorStop(0, "transparent");
+    fg.addColorStop(0.3, "rgba(39,39,42,0.4)");
+    fg.addColorStop(0.5, "#27272a");
+    fg.addColorStop(0.7, "rgba(39,39,42,0.4)");
+    fg.addColorStop(1, "transparent");
+    ctx.fillStyle = fg;
+    ctx.fillRect(PX, y, W - PX * 2, 1);
+    y += 30;
+    ctx.fillStyle = "#52525b";
+    ctx.font = "500 20px Inter, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Hecho con Cosqu\u00edn Rock App", W / 2, y + 16);
+
+    // Export
+    const fname = `mi-agenda-cosquin-${dayFilter === "both" ? "completa" : `dia-${dayFilter}`}.jpg`;
+    await new Promise<void>((resolve) => {
+      canvas.toBlob(
+        async (blob) => {
+          if (!blob) { resolve(); return; }
+          if (navigator.share) {
+            const file = new File([blob], fname, { type: "image/jpeg" });
+            const canShare = navigator.canShare ? navigator.canShare({ files: [file] }) : false;
+            if (canShare) {
+              try {
+                await navigator.share({ files: [file], title: "Mi Agenda - Cosqu\u00edn Rock 2026" });
+                resolve();
+                return;
+              } catch { /* fall through to download */ }
+            }
+          }
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fname;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          resolve();
+        },
+        "image/jpeg",
+        0.92
+      );
+    });
+  };
 
   if (status === "loading" || status === "unauthenticated") {
     return (
@@ -185,6 +400,47 @@ export default function MyBandsPage() {
                 )}
                 {sharing ? "..." : linkCopied ? "Link copiado!" : "Compartir"}
               </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                  disabled={bands.length === 0 || generating}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 disabled:opacity-50 bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                >
+                  {generating ? (
+                    <div className="w-3.5 h-3.5 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                  {generating ? "..." : "Imagen"}
+                </button>
+                {showDownloadMenu && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setShowDownloadMenu(false)} />
+                    <div className="absolute right-0 top-full mt-2 bg-zinc-800 border border-zinc-700 rounded-xl shadow-xl z-40 overflow-hidden min-w-[170px]">
+                      <button
+                        onClick={async () => { setShowDownloadMenu(false); setGenerating(true); try { await generateAgendaImage(1); } finally { setGenerating(false); } }}
+                        className="w-full px-4 py-3 text-left text-sm text-zinc-200 hover:bg-zinc-700 transition-colors"
+                      >
+                        Sábado 14
+                      </button>
+                      <button
+                        onClick={async () => { setShowDownloadMenu(false); setGenerating(true); try { await generateAgendaImage(2); } finally { setGenerating(false); } }}
+                        className="w-full px-4 py-3 text-left text-sm text-zinc-200 hover:bg-zinc-700 transition-colors border-t border-zinc-700/50"
+                      >
+                        Domingo 15
+                      </button>
+                      <button
+                        onClick={async () => { setShowDownloadMenu(false); setGenerating(true); try { await generateAgendaImage("both"); } finally { setGenerating(false); } }}
+                        className="w-full px-4 py-3 text-left text-sm text-zinc-200 hover:bg-zinc-700 transition-colors border-t border-zinc-700/50"
+                      >
+                        Ambos días
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
