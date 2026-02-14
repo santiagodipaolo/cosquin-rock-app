@@ -48,8 +48,8 @@ export default function SchedulePage() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [pendingNotifications, setPendingNotifications] = useState(0);
   const [selectedBand, setSelectedBand] = useState<Band | null>(null);
-  const [gridScale, setGridScale] = useState(0.45);
-  const gridScaleRef = useRef(0.45);
+  const [gridScale, setGridScale] = useState(1);
+  const gridScaleRef = useRef(1);
   const zoomOut = gridScale < 0.7;
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -95,14 +95,6 @@ export default function SchedulePage() {
       }, 300);
     }
   }, [loading, selectedDay]);
-
-  // Calculate exact fit scale on mount
-  useEffect(() => {
-    const fitScale = (window.innerWidth - 16) / (stages.length * 120 + 56);
-    const clamped = Math.max(0.35, Math.min(0.65, fitScale));
-    setGridScale(clamped);
-    gridScaleRef.current = clamped;
-  }, [stages.length]);
 
   // Sync gridScale ref
   useEffect(() => { gridScaleRef.current = gridScale; }, [gridScale]);
