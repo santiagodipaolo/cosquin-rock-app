@@ -1,5 +1,5 @@
-const CACHE_NAME = 'cosquin-rock-v9';
-const RUNTIME_CACHE = 'runtime-cache-v9';
+const CACHE_NAME = 'cosquin-rock-v10';
+const RUNTIME_CACHE = 'runtime-cache-v10';
 
 // Recursos para pre-cachear
 const PRE_CACHE_URLS = [
@@ -59,64 +59,80 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Estrategia para APIs: Network First con fallback a cache
+  // Estrategia para APIs: Cache First - sirve del cache si existe, actualiza en background
+  // En el recital no hay señal, así que siempre servir del cache primero
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // Cachear respuestas exitosas de APIs específicas
-          if (response.ok && (
-            url.pathname.includes('/api/bands') ||
-            url.pathname.includes('/api/attendance') ||
-            url.pathname.includes('/api/groups') ||
-            url.pathname.includes('/api/friends')
-          )) {
-            const responseClone = response.clone();
-            caches.open(RUNTIME_CACHE).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          // Si falla, intentar desde cache
-          return caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
-              console.log('[SW] Serving API from cache:', url.pathname);
-              return cachedResponse;
+      caches.match(request).then((cachedResponse) => {
+        // Intentar actualizar en background (sin bloquear)
+        const fetchPromise = fetch(request)
+          .then((response) => {
+            if (response.ok && (
+              url.pathname.includes('/api/bands') ||
+              url.pathname.includes('/api/attendance') ||
+              url.pathname.includes('/api/groups') ||
+              url.pathname.includes('/api/friends')
+            )) {
+              const responseClone = response.clone();
+              caches.open(RUNTIME_CACHE).then((cache) => {
+                cache.put(request, responseClone);
+              });
             }
-            // Retornar respuesta offline genérica
-            return new Response(
-              JSON.stringify({ error: 'Sin conexión', offline: true }),
-              {
-                headers: { 'Content-Type': 'application/json' },
-                status: 503
-              }
-            );
-          });
-        })
+            return response;
+          })
+          .catch(() => null);
+
+        if (cachedResponse) {
+          console.log('[SW] Serving API from cache:', url.pathname);
+          return cachedResponse;
+        }
+
+        // Si no hay cache, esperar la red
+        return fetchPromise.then((response) => {
+          if (response) return response;
+          return new Response(
+            JSON.stringify({ error: 'Sin conexión', offline: true }),
+            {
+              headers: { 'Content-Type': 'application/json' },
+              status: 503
+            }
+          );
+        });
+      })
     );
     return;
   }
 
-  // Estrategia para páginas: Network First con fallback a cache
-  // Esto asegura que los usuarios siempre vean la versión más reciente
+  // Estrategia para páginas: Cache First - sirve del cache si existe
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const responseClone = response.clone();
-            caches.open(RUNTIME_CACHE).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          return caches.match(request)
-            .then((cachedResponse) => cachedResponse || caches.match('/') || new Response('Offline'));
-        })
+      caches.match(request).then((cachedResponse) => {
+        if (cachedResponse) {
+          // Actualizar cache en background
+          fetch(request).then((response) => {
+            if (response.ok) {
+              caches.open(RUNTIME_CACHE).then((cache) => {
+                cache.put(request, response);
+              });
+            }
+          }).catch(() => {});
+          return cachedResponse;
+        }
+        // Si no hay cache, intentar red
+        return fetch(request)
+          .then((response) => {
+            if (response.ok) {
+              const responseClone = response.clone();
+              caches.open(RUNTIME_CACHE).then((cache) => {
+                cache.put(request, responseClone);
+              });
+            }
+            return response;
+          })
+          .catch(() => {
+            return caches.match('/').then((r) => r || new Response('Offline'));
+          });
+      })
     );
     return;
   }

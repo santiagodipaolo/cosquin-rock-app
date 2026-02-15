@@ -31,7 +31,7 @@ export default function MyBandsPage() {
   const router = useRouter();
   const [bands, setBands] = useState<MyBand[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDay, setSelectedDay] = useState<1 | 2>(1);
+  const [selectedDay, setSelectedDay] = useState<1 | 2>(2);
   const [sharing, setSharing] = useState(false);
   const [now, setNow] = useState(Date.now());
   const nowLineRef = useRef<HTMLDivElement>(null);

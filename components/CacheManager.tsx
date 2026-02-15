@@ -15,7 +15,8 @@ export default function CacheManager() {
     try {
       // Precargar todas las APIs críticas para que el SW las cachee
       const endpoints = [
-        "/api/bands",
+        "/api/bands?day=1",
+        "/api/bands?day=2",
         "/api/attendance",
         "/api/groups",
         "/api/friends",

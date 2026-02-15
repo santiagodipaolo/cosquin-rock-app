@@ -33,7 +33,7 @@ type TimeSlot = {
 export default function SchedulePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [selectedDay, setSelectedDay] = useState<1 | 2>(1);
+  const [selectedDay, setSelectedDay] = useState<1 | 2>(2);
   const [bands, setBands] = useState<Band[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
@@ -240,6 +240,12 @@ export default function SchedulePage() {
 
   const isBandPast = useCallback((band: Band) => {
     return new Date(band.endTime).getTime() < now;
+  }, [now]);
+
+  const isBandCurrent = useCallback((band: Band) => {
+    const start = new Date(band.startTime).getTime();
+    const end = new Date(band.endTime).getTime();
+    return now >= start && now < end;
   }, [now]);
 
   const findTimeLinePosition = useCallback(() => {
@@ -578,6 +584,7 @@ export default function SchedulePage() {
                   {timeSlots.map((slot, slotIdx) => {
                     const band = slot.bands[stage];
                     const isPast = band ? isBandPast(band) : (timeLinePosition !== -1 && slotIdx < timeLinePosition);
+                    const isCurrent = band ? isBandCurrent(band) : false;
 
                     return (
                       <div key={`${stage}-${slot.time}`} className="relative">
@@ -601,6 +608,10 @@ export default function SchedulePage() {
                               className={`h-full ${zoomOut ? 'rounded-md' : 'rounded-xl'} cursor-pointer flex flex-col justify-center relative overflow-hidden transition-all duration-200 ${
                                 isPast
                                   ? "opacity-50"
+                                  : isCurrent && band.isAttending
+                                  ? `shadow-lg ${colors.glow} border-2 border-white/30 ring-2 ring-red-500/50`
+                                  : isCurrent
+                                  ? "ring-2 ring-red-500/40"
                                   : band.isAttending
                                   ? `shadow-lg ${colors.glow} border-2 border-white/30 ring-2`
                                   : highlightedBand === band.id
@@ -611,6 +622,10 @@ export default function SchedulePage() {
                                 padding: zoomOut ? "2px 3px" : "5px 7px",
                                 ...(isPast
                                   ? { backgroundColor: `${colors.accent}10`, border: `1px solid ${colors.accent}15` }
+                                  : isCurrent && band.isAttending
+                                  ? { backgroundColor: `${colors.accent}90`, ringColor: `${colors.accent}60` }
+                                  : isCurrent
+                                  ? { backgroundColor: `${colors.accent}40`, border: `1px solid ${colors.accent}60` }
                                   : band.isAttending
                                   ? { backgroundColor: `${colors.accent}90`, ringColor: `${colors.accent}60` }
                                   : highlightedBand === band.id
@@ -622,7 +637,7 @@ export default function SchedulePage() {
                               {/* Nombre */}
                               <div className="flex-1 min-h-0 flex items-center">
                                 <h3 className={`${zoomOut ? 'text-[8px]' : 'text-xs'} font-bold leading-tight line-clamp-2 text-center w-full ${
-                                  isPast ? "text-zinc-500" : band.isAttending ? "text-white drop-shadow-md" : "text-zinc-400"
+                                  isPast ? "text-zinc-500" : (isCurrent || band.isAttending) ? "text-white drop-shadow-md" : "text-zinc-400"
                                 }`}>
                                   {band.name}
                                 </h3>
